@@ -27,7 +27,23 @@ export function describeCard(id) {
 }
 
 export function createGame() {
-  return { round: 0, revision: 0, cards: [], selectedCard: null };
+  return { round: 0, revision: 0, dealer: 'host', cards: [], selectedCard: null };
+}
+
+/** The completed choice changes whose turn comes next, not the current deal. */
+export function getNextDealer(state) {
+  if (!isValidState(state)) return null;
+  return state.selectedCard === null ? state.dealer : (state.dealer === 'host' ? 'guest' : 'host');
+}
+
+export function canDeal(state, role) {
+  return (role === 'host' || role === 'guest') && isValidState(state)
+    && role === getNextDealer(state);
+}
+
+export function canSelect(state, role) {
+  return (role === 'host' || role === 'guest') && isValidState(state)
+    && state.round > 0 && state.selectedCard === null && role !== state.dealer;
 }
 
 function secureRandom() {
@@ -62,14 +78,15 @@ export function dealCards(state, random = secureRandom) {
   return {
     round: state.round + 1,
     revision: state.revision + 1,
+    dealer: getNextDealer(state),
     cards: deck.slice(0, 10),
     selectedCard: null,
   };
 }
 
 export function selectCard(state, action) {
-  if (!isValidState(state) || !action || typeof action !== 'object' || Array.isArray(action)
-    || action.round !== state.round || state.round === 0 || state.selectedCard !== null
+  if (!action || typeof action !== 'object' || Array.isArray(action)
+    || !canSelect(state, action.role) || action.round !== state.round
     || !state.cards.includes(action.cardId)) return state;
   return { ...state, revision: state.revision + 1, selectedCard: action.cardId };
 }
@@ -78,10 +95,12 @@ export function isValidState(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || !Number.isSafeInteger(value.round) || value.round < 0
     || !Number.isSafeInteger(value.revision) || value.revision < value.round
+    || (value.dealer !== 'host' && value.dealer !== 'guest')
     || !Array.isArray(value.cards)
     || (value.selectedCard !== null && typeof value.selectedCard !== 'string')) return false;
   if (value.round === 0) {
-    return value.revision === 0 && value.cards.length === 0 && value.selectedCard === null;
+    return value.revision === 0 && value.dealer === 'host'
+      && value.cards.length === 0 && value.selectedCard === null;
   }
   return value.cards.length === 10
     && new Set(value.cards).size === 10

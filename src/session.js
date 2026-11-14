@@ -1,20 +1,23 @@
 /**
  * Two-player WebRTC transport. PeerJS is supplied by the caller, not imported.
  * host() resolves to {hostId, secret}; join(invite) resolves after authentication.
- * All callbacks receive copies. Only a host may deal; only a connected guest
- * may select. close() is final: make a new session object for another game.
+ * All callbacks receive copies. Players alternate dealer and chooser while
+ * the original host keeps the official state and shuffles every deal.
+ * close() is final: make a new session object for another game.
  * The invitation is a bearer capability; it stays in memory for this tab.
  */
-import { createGame, dealCards, selectCard, isValidState } from './game.js';
+import { createGame, dealCards, selectCard, isValidState, canDeal, canSelect } from './game.js';
 
-const VERSION = 1;
+const VERSION = 2;
 const HOST_ID = /^ten-[a-f0-9]{32}$/;
 const SECRET = /^[a-f0-9]{32}$/;
 const noop = () => {};
 const copy = state => ({ ...state, cards: [...state.cards] });
 const packet = (type, fields = {}) => ({ v: VERSION, type, ...fields });
-const validPacket = value => value !== null && typeof value === 'object' &&
-  !Array.isArray(value) && value.v === VERSION && typeof value.type === 'string';
+const packetShape = value => value !== null && typeof value === 'object' &&
+  !Array.isArray(value) && typeof value.type === 'string';
+const validPacket = value => packetShape(value) && value.v === VERSION;
+const UPDATE_MESSAGE = 'These pages are running different game versions. Refresh both browsers, then create a new invite.';
 
 function randomHex() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)), byte =>
@@ -136,9 +139,9 @@ export function createSession({
     pending.delete(conn);
   }
 
-  function reject(conn, reason) {
+  function reject(conn, reason, version = VERSION) {
     clearPending(conn);
-    send(conn, packet('reject', { reason }));
+    send(conn, { ...packet('reject', { reason }), v: version });
     const timer = clock.setTimeout(() => {
       deferredClosures.delete(conn);
       safeClose(conn);
@@ -189,7 +192,7 @@ export function createSession({
         return;
       }
       if (role === 'guest' && elapsed >= limits.suspect && phase !== 'reconnecting') {
-        status('reconnecting', 'Waiting for the host. Card selection is paused.');
+        status('reconnecting', 'Waiting for the host. The game is paused.');
       }
       if (!send(connection, packet('ping'))) {
         if (role === 'host') hostLostGuest(connection);
@@ -208,7 +211,15 @@ export function createSession({
       safeClose(conn);
     }, limits.handshake));
     conn.on('data', data => {
-      if (closed || !validPacket(data)) return;
+      if (closed) return;
+      if (conn !== connection && pending.has(conn) && packetShape(data) &&
+        data.type === 'hello' && data.v !== VERSION) {
+        // Reply in v1 when requested so the original client receives a reject
+        // it understands, rather than waiting forever for an unknown protocol.
+        reject(conn, 'version-mismatch', data.v === 1 ? 1 : VERSION);
+        return;
+      }
+      if (!validPacket(data)) return;
       if (conn !== connection) {
         if (!pending.has(conn) || data.type !== 'hello') return;
         if (data.secret !== invitation.secret) { reject(conn, 'unauthorized'); return; }
@@ -230,11 +241,17 @@ export function createSession({
       if (data.type === 'ping') send(conn, packet('pong'));
       if (data.type === 'leave') { hostLostGuest(conn); safeClose(conn); }
       if (data.type === 'select') {
-        const next = selectCard(state, { round: data.round, cardId: data.cardId });
+        // Sender identity comes from the authenticated connection, never from
+        // a role supplied by the remote browser.
+        const next = selectCard(state, { round: data.round, cardId: data.cardId, role: 'guest' });
         if (next !== state) {
           updateState(next);
           if (!send(conn, packet('state', { state: copy(state) }))) hostLostGuest(conn);
         }
+      }
+      if (data.type === 'deal' && data.round === state.round && canDeal(state, 'guest')) {
+        updateState(dealCards(state));
+        if (!send(conn, packet('state', { state: copy(state) }))) hostLostGuest(conn);
       }
     });
     conn.on('close', () => hostLostGuest(conn));
@@ -251,11 +268,19 @@ export function createSession({
     conn.on('open', greet);
     if (conn.open) queueMicrotask(greet);
     conn.on('data', data => {
-      if (closed || conn !== connection || !validPacket(data)) return;
+      if (closed || conn !== connection) return;
+      if (!authenticated && packetShape(data) && data.v !== VERSION) {
+        finish(UPDATE_MESSAGE, true);
+        return;
+      }
+      // Ignore malformed/unexpected traffic after authentication; it must not
+      // disrupt a session whose version was successfully negotiated.
+      if (!validPacket(data)) return;
       if (data.type === 'reject') {
-        const message = data.reason === 'room-full' ?
-          'This table already has a guest. Ask the host to start another game.' :
-          'This invitation is invalid. Ask the host for the complete invite link.';
+        const message = data.reason === 'version-mismatch' ? UPDATE_MESSAGE :
+          data.reason === 'room-full' ?
+            'This table already has a guest. Ask the host to start another game.' :
+            'This invitation is invalid. Ask the host for the complete invite link.';
         finish(message, true);
         return;
       }
@@ -306,7 +331,7 @@ export function createSession({
       startup = { resolve, reject: rejectPromise };
     });
     startupTimer = clock.setTimeout(() => finish(
-      'Could not establish a connection. Check your internet connection, then try a new invite or another network.', true),
+      'Could not establish a connection. Refresh both browsers to update the game, then try a new invite or another network.', true),
     limits.startup);
     try {
       peer = new Peer(role === 'host' ? invitation.hostId : undefined, { debug: 0, ...peerOptions });
@@ -377,15 +402,26 @@ export function createSession({
       return start('guest', { hostId: invite.hostId, secret: invite.secret });
     },
     deal() {
-      if (closed || role !== 'host' || !signalingReady && !authenticated) return false;
+      if (closed || !canDeal(state, role)) return false;
+      if (role === 'guest') {
+        if (!authenticated || phase !== 'connected') return false;
+        return send(connection, packet('deal', { round: state.round }));
+      }
+      if (role !== 'host' || !signalingReady && !authenticated) return false;
       updateState(dealCards(state));
       if (connection && !send(connection, packet('state', { state: copy(state) }))) hostLostGuest(connection);
       return true;
     },
     select(cardId) {
-      if (closed || role !== 'guest' || !authenticated || phase !== 'connected' ||
-        state.selectedCard !== null || !state.cards.includes(cardId)) return false;
-      return send(connection, packet('select', { round: state.round, cardId }));
+      if (closed || !authenticated || phase !== 'connected' || !connection?.open ||
+        !canSelect(state, role) || !state.cards.includes(cardId)) return false;
+      if (role === 'guest') return send(connection, packet('select', { round: state.round, cardId }));
+      if (role !== 'host') return false;
+      const next = selectCard(state, { round: state.round, cardId, role: 'host' });
+      if (next === state) return false;
+      updateState(next);
+      if (!send(connection, packet('state', { state: copy(state) }))) hostLostGuest(connection);
+      return true;
     },
     close() {
       if (closed) return;

@@ -2,14 +2,16 @@
 
 A small, open-source card table for two people. One browser hosts the game, another joins through an invite link, and both display the same ten cards.
 
-This project is ready to run locally or upload to your own GitHub repository. No GitHub repository or live deployment has been created for you.
+This project runs locally or on GitHub Pages. To update an existing site, replace the changed files in its repository and wait for Pages to deploy.
 
 ## The rules
 
 - One host and one guest.
-- The host deals ten distinct, face-up cards from a fresh standard 52-card deck, with no jokers.
+- The host deals the first ten distinct, face-up cards from a fresh standard 52-card deck, with no jokers.
 - The guest selects one card. Both screens show the accepted choice.
-- There is one choice per deal. Dealing again clears the previous choice.
+- The guest can then click **Deal next hand** to deal ten cards for the host to choose from.
+- After each choice, the chooser gets the next deal. This repeats in the same room, using the same invite link.
+- There is one choice per deal. A fresh deal clears the selection. Before a selection, the current dealer may re-deal without changing whose turn it is.
 - The host can deal before the guest joins; the guest receives the current game when connecting.
 - A disconnected guest can be replaced while the host keeps the game open.
 - Closing, refreshing, or leaving the host's page ends that session. Connection loss takes a short time to detect.
@@ -46,7 +48,15 @@ For a first look, choose **Just exploring? Try it on this device**. This local p
 2. The host clicks **Copy invite link** and shares it with the guest.
 3. The guest opens the link, or pastes it into **Invite link** and clicks **Join table**.
 4. The host clicks **Deal ten cards**. The guest picks one card.
-5. Both screens show the same selection. The host can deal again for another choice.
+5. Both screens show the same selection. The guest now has a **Deal next hand** button.
+6. The guest deals; the host selects a card. The host then deals the next hand, and the turns continue.
+
+**Hosting and dealing are separate roles.** The original host keeps the session alive and validates shared state, even during the guest's dealing turn. Keep the host's tab open throughout.
+
+When updating from the first version, replace `index.html` and all three changed
+JavaScript files (`src/app.js`, `src/game.js`, `src/session.js`). Both players
+should refresh the updated website and start a new game. This version uses a new
+message format so that dealing turns stay consistent on both screens.
 
 To test on one computer, use a second browser window for the guest. For another device, first publish the project: a `localhost` link points to the device opening it, not to the host's computer.
 
@@ -79,14 +89,18 @@ See [GitHub Pages documentation](https://docs.github.com/en/pages/getting-starte
 | --- | --- |
 | `index.html` and `styles.css` | Page structure, controls, and card-table appearance. |
 | `src/app.js` | Connects the controls to the game and displays updates. |
-| `src/game.js` | Deck, shuffle, dealing, and selection rules, independent of the page and network. |
+| `src/game.js` | Deck, shuffle, alternating dealer/chooser turns, and selection rules. |
 | `src/session.js` | Host/guest connections, admission, messages, synchronization, and disconnect handling. |
 | `src/invite.js` | Builds and validates invite links. |
 | `src/config.js` | PeerJS library location and WebRTC connection settings. |
 | `tests/` | Automated tests for rules, invitations, and simulated sessions. |
 | `scripts/` | Local web server, project checks, and static build. |
 
-The host owns the official game state. A guest sends a selection request; the host checks it and distributes the accepted update. The browsers send card identifiers and small messages, rather than streaming a screen.
+The original host owns the official game state. The current chooser can select,
+and the next dealer can start the next hand. Guest actions travel to the host,
+which checks whose turn it is, shuffles or records the selection, and distributes
+the accepted update. The browsers send card identifiers and small messages,
+rather than streaming a screen.
 
 ## Networking and its current limits
 
@@ -108,7 +122,13 @@ npm run build
 
 The build copies the public application files into `dist/`; no framework or package installation is required. Building is optional for root-folder GitHub Pages publication.
 
-The initial automated verification covers card rules, invite handling, and simulated host/guest sessions. Browser interaction and actual cross-network WebRTC connections have not been verified in the development environment. After publishing, test the full flow on two devices, including different networks, joining after a deal, a second guest being refused, re-dealing, and closing the host's page.
+Automated verification covers card rules, invite handling, simulated host/guest
+sessions, and alternating turns. The browser timer regression is included.
+The first version has been reported working on the user's live site; the new
+alternating-turn behavior still needs a live browser retest after deployment.
+Test the full cycle on two devices: host deals, guest selects and deals, host
+selects and deals again. Also test joining after a deal, a second guest being
+refused, and closing the original host's page during the guest's dealing turn.
 
 ## Where this can go next
 

@@ -986,15 +986,15 @@ input::placeholder {
 
     <section class="help-panel" id="how-to-play" hidden aria-label="How to play">
       <div><span class="step-number">01</span><strong>Open a table</strong><p>One person hosts and shares an invite link.</p></div>
-      <div><span class="step-number">02</span><strong>Deal ten cards</strong><p>The host deals. Both people see the same cards.</p></div>
-      <div><span class="step-number">03</span><strong>Make a choice</strong><p>The guest picks one card. Both screens show it.</p></div>
+      <div><span class="step-number">02</span><strong>Deal ten cards</strong><p>The host deals first. Both people see the same cards.</p></div>
+      <div><span class="step-number">03</span><strong>Take turns</strong><p>Pick one card, then deal the next hand for your friend.</p></div>
       <p class="help-footnote">A fresh deal clears the choice. The game ends when the host leaves or refreshes.</p>
     </section>
 
     <main>
       <section class="intro">
         <div><p class="eyebrow">ONE DECK. TWO PEOPLE.</p><h1>A little table.<br>A shared choice.</h1></div>
-        <p class="intro-copy">Ten cards, face up.<br>Invite someone. See what they pick.</p>
+        <p class="intro-copy">Ten cards, face up.<br>Invite someone. Take turns choosing.</p>
       </section>
 
       <div class="game-layout">
@@ -1032,7 +1032,7 @@ input::placeholder {
             <button class="text-button end-button" id="leave-button">End game</button>
           </section>
 
-          <section class="note-card"><span class="note-suit" aria-hidden="true">♣</span><div><strong>One table, two screens.</strong><p>You both see the same cards. Only the host deals.</p></div></section>
+          <section class="note-card"><span class="note-suit" aria-hidden="true">♣</span><div><strong>One table, two screens.</strong><p>Take turns dealing. The chooser deals the next hand.</p></div></section>
         </aside>
 
         <section class="table-section" aria-label="Shared card table">
@@ -1085,7 +1085,23 @@ function describeCard(id) {
 }
 
 function createGame() {
-  return { round: 0, revision: 0, cards: [], selectedCard: null };
+  return { round: 0, revision: 0, dealer: 'host', cards: [], selectedCard: null };
+}
+
+/** The completed choice changes whose turn comes next, not the current deal. */
+function getNextDealer(state) {
+  if (!isValidState(state)) return null;
+  return state.selectedCard === null ? state.dealer : (state.dealer === 'host' ? 'guest' : 'host');
+}
+
+function canDeal(state, role) {
+  return (role === 'host' || role === 'guest') && isValidState(state)
+    && role === getNextDealer(state);
+}
+
+function canSelect(state, role) {
+  return (role === 'host' || role === 'guest') && isValidState(state)
+    && state.round > 0 && state.selectedCard === null && role !== state.dealer;
 }
 
 function secureRandom() {
@@ -1120,14 +1136,15 @@ function dealCards(state, random = secureRandom) {
   return {
     round: state.round + 1,
     revision: state.revision + 1,
+    dealer: getNextDealer(state),
     cards: deck.slice(0, 10),
     selectedCard: null,
   };
 }
 
 function selectCard(state, action) {
-  if (!isValidState(state) || !action || typeof action !== 'object' || Array.isArray(action)
-    || action.round !== state.round || state.round === 0 || state.selectedCard !== null
+  if (!action || typeof action !== 'object' || Array.isArray(action)
+    || !canSelect(state, action.role) || action.round !== state.round
     || !state.cards.includes(action.cardId)) return state;
   return { ...state, revision: state.revision + 1, selectedCard: action.cardId };
 }
@@ -1136,10 +1153,12 @@ function isValidState(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || !Number.isSafeInteger(value.round) || value.round < 0
     || !Number.isSafeInteger(value.revision) || value.revision < value.round
+    || (value.dealer !== 'host' && value.dealer !== 'guest')
     || !Array.isArray(value.cards)
     || (value.selectedCard !== null && typeof value.selectedCard !== 'string')) return false;
   if (value.round === 0) {
-    return value.revision === 0 && value.cards.length === 0 && value.selectedCard === null;
+    return value.revision === 0 && value.dealer === 'host'
+      && value.cards.length === 0 && value.selectedCard === null;
   }
   return value.cards.length === 10
     && new Set(value.cards).size === 10
@@ -1151,19 +1170,22 @@ function isValidState(value) {
 /**
  * Two-player WebRTC transport. PeerJS is supplied by the caller, not imported.
  * host() resolves to {hostId, secret}; join(invite) resolves after authentication.
- * All callbacks receive copies. Only a host may deal; only a connected guest
- * may select. close() is final: make a new session object for another game.
+ * All callbacks receive copies. Players alternate dealer and chooser while
+ * the original host keeps the official state and shuffles every deal.
+ * close() is final: make a new session object for another game.
  * The invitation is a bearer capability; it stays in memory for this tab.
  */
 
-const VERSION = 1;
+const VERSION = 2;
 const HOST_ID = /^ten-[a-f0-9]{32}$/;
 const SECRET = /^[a-f0-9]{32}$/;
 const noop = () => {};
 const copy = state => ({ ...state, cards: [...state.cards] });
 const packet = (type, fields = {}) => ({ v: VERSION, type, ...fields });
-const validPacket = value => value !== null && typeof value === 'object' &&
-  !Array.isArray(value) && value.v === VERSION && typeof value.type === 'string';
+const packetShape = value => value !== null && typeof value === 'object' &&
+  !Array.isArray(value) && typeof value.type === 'string';
+const validPacket = value => packetShape(value) && value.v === VERSION;
+const UPDATE_MESSAGE = 'These pages are running different game versions. Refresh both browsers, then create a new invite.';
 
 function randomHex() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)), byte =>
@@ -1188,7 +1210,13 @@ function createSession({
   timers = {},
 } = {}) {
   const clock = {
-    now: () => Date.now(), setTimeout, clearTimeout, setInterval, clearInterval,
+    now: () => Date.now(),
+    // Window timer methods require their global receiver. Storing a raw method
+    // here would call it with `clock` as `this`, which browsers reject.
+    setTimeout: (...args) => globalThis.setTimeout(...args),
+    clearTimeout: (...args) => globalThis.clearTimeout(...args),
+    setInterval: (...args) => globalThis.setInterval(...args),
+    clearInterval: (...args) => globalThis.clearInterval(...args),
     ...timers,
   };
   const limits = {
@@ -1279,9 +1307,9 @@ function createSession({
     pending.delete(conn);
   }
 
-  function reject(conn, reason) {
+  function reject(conn, reason, version = VERSION) {
     clearPending(conn);
-    send(conn, packet('reject', { reason }));
+    send(conn, { ...packet('reject', { reason }), v: version });
     const timer = clock.setTimeout(() => {
       deferredClosures.delete(conn);
       safeClose(conn);
@@ -1332,7 +1360,7 @@ function createSession({
         return;
       }
       if (role === 'guest' && elapsed >= limits.suspect && phase !== 'reconnecting') {
-        status('reconnecting', 'Waiting for the host. Card selection is paused.');
+        status('reconnecting', 'Waiting for the host. The game is paused.');
       }
       if (!send(connection, packet('ping'))) {
         if (role === 'host') hostLostGuest(connection);
@@ -1351,7 +1379,15 @@ function createSession({
       safeClose(conn);
     }, limits.handshake));
     conn.on('data', data => {
-      if (closed || !validPacket(data)) return;
+      if (closed) return;
+      if (conn !== connection && pending.has(conn) && packetShape(data) &&
+        data.type === 'hello' && data.v !== VERSION) {
+        // Reply in v1 when requested so the original client receives a reject
+        // it understands, rather than waiting forever for an unknown protocol.
+        reject(conn, 'version-mismatch', data.v === 1 ? 1 : VERSION);
+        return;
+      }
+      if (!validPacket(data)) return;
       if (conn !== connection) {
         if (!pending.has(conn) || data.type !== 'hello') return;
         if (data.secret !== invitation.secret) { reject(conn, 'unauthorized'); return; }
@@ -1373,11 +1409,17 @@ function createSession({
       if (data.type === 'ping') send(conn, packet('pong'));
       if (data.type === 'leave') { hostLostGuest(conn); safeClose(conn); }
       if (data.type === 'select') {
-        const next = selectCard(state, { round: data.round, cardId: data.cardId });
+        // Sender identity comes from the authenticated connection, never from
+        // a role supplied by the remote browser.
+        const next = selectCard(state, { round: data.round, cardId: data.cardId, role: 'guest' });
         if (next !== state) {
           updateState(next);
           if (!send(conn, packet('state', { state: copy(state) }))) hostLostGuest(conn);
         }
+      }
+      if (data.type === 'deal' && data.round === state.round && canDeal(state, 'guest')) {
+        updateState(dealCards(state));
+        if (!send(conn, packet('state', { state: copy(state) }))) hostLostGuest(conn);
       }
     });
     conn.on('close', () => hostLostGuest(conn));
@@ -1394,11 +1436,19 @@ function createSession({
     conn.on('open', greet);
     if (conn.open) queueMicrotask(greet);
     conn.on('data', data => {
-      if (closed || conn !== connection || !validPacket(data)) return;
+      if (closed || conn !== connection) return;
+      if (!authenticated && packetShape(data) && data.v !== VERSION) {
+        finish(UPDATE_MESSAGE, true);
+        return;
+      }
+      // Ignore malformed/unexpected traffic after authentication; it must not
+      // disrupt a session whose version was successfully negotiated.
+      if (!validPacket(data)) return;
       if (data.type === 'reject') {
-        const message = data.reason === 'room-full' ?
-          'This table already has a guest. Ask the host to start another game.' :
-          'This invitation is invalid. Ask the host for the complete invite link.';
+        const message = data.reason === 'version-mismatch' ? UPDATE_MESSAGE :
+          data.reason === 'room-full' ?
+            'This table already has a guest. Ask the host to start another game.' :
+            'This invitation is invalid. Ask the host for the complete invite link.';
         finish(message, true);
         return;
       }
@@ -1449,7 +1499,7 @@ function createSession({
       startup = { resolve, reject: rejectPromise };
     });
     startupTimer = clock.setTimeout(() => finish(
-      'Could not establish a connection. Check your internet connection, then try a new invite or another network.', true),
+      'Could not establish a connection. Refresh both browsers to update the game, then try a new invite or another network.', true),
     limits.startup);
     try {
       peer = new Peer(role === 'host' ? invitation.hostId : undefined, { debug: 0, ...peerOptions });
@@ -1520,15 +1570,26 @@ function createSession({
       return start('guest', { hostId: invite.hostId, secret: invite.secret });
     },
     deal() {
-      if (closed || role !== 'host' || !signalingReady && !authenticated) return false;
+      if (closed || !canDeal(state, role)) return false;
+      if (role === 'guest') {
+        if (!authenticated || phase !== 'connected') return false;
+        return send(connection, packet('deal', { round: state.round }));
+      }
+      if (role !== 'host' || !signalingReady && !authenticated) return false;
       updateState(dealCards(state));
       if (connection && !send(connection, packet('state', { state: copy(state) }))) hostLostGuest(connection);
       return true;
     },
     select(cardId) {
-      if (closed || role !== 'guest' || !authenticated || phase !== 'connected' ||
-        state.selectedCard !== null || !state.cards.includes(cardId)) return false;
-      return send(connection, packet('select', { round: state.round, cardId }));
+      if (closed || !authenticated || phase !== 'connected' || !connection?.open ||
+        !canSelect(state, role) || !state.cards.includes(cardId)) return false;
+      if (role === 'guest') return send(connection, packet('select', { round: state.round, cardId }));
+      if (role !== 'host') return false;
+      const next = selectCard(state, { round: state.round, cardId, role: 'host' });
+      if (next === state) return false;
+      updateState(next);
+      if (!send(connection, packet('state', { state: copy(state) }))) hostLostGuest(connection);
+      return true;
     },
     close() {
       if (closed) return;
@@ -1592,7 +1653,7 @@ let guestPresent = false;
 let inviteLink = '';
 let session = null;
 let busy = false;
-let pending = false;
+let pending = null;
 let pendingTimer;
 let toastTimer;
 let libraryPromise;
@@ -1602,6 +1663,7 @@ let operation = 0;
 function showError(message) {
   $('error-message').textContent = message;
   $('error-panel').hidden = false;
+  $('error-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 function clearError() { $('error-panel').hidden = true; }
 function announce(message) { $('connection-message').textContent = message; }
@@ -1639,33 +1701,45 @@ function loadPeer() {
   return libraryPromise;
 }
 
-function selectFromTable(cardId) {
+function act(kind, cardId) {
   if (mode === 'practice') {
-    state = selectCard(state, { round: state.round, cardId });
+    state = kind === 'deal' ? dealCards(state) : selectCard(state, {
+      round: state.round, cardId, role: state.dealer === 'host' ? 'guest' : 'host',
+    });
+    announce(state.selectedCard
+      ? `Choice recorded. ${getNextDealer(state) === 'host' ? 'Host' : 'Guest'} deals next.`
+      : `${state.dealer === 'host' ? 'Host' : 'Guest'} dealt. Practice choosing for the other player.`);
     render();
     return;
   }
-  if (mode !== 'guest' || phase !== 'connected' || pending || state.selectedCard) return;
-  pending = true;
+  const connected = phase === 'connected';
+  const hostWaiting = mode === 'host' && phase === 'waiting';
+  if (pending || !session || (!connected && !(kind === 'deal' && hostWaiting))) return;
+  if (kind === 'deal' ? !canDeal(state, mode) : !canSelect(state, mode)) return;
+  const revision = state.revision;
+  pending = kind;
   render();
-  if (!session.select(cardId)) {
-    pending = false;
+  const accepted = kind === 'deal' ? session.deal() : session.select(cardId);
+  if (!accepted) {
+    pending = null;
     render();
     return;
   }
-  announce('Sending your choice to the host…');
+  // A host action is confirmed synchronously; a guest waits for shared state.
+  if (!pending) return;
+  announce(kind === 'deal' ? 'Dealing the next hand…' : 'Confirming your choice…');
   clearTimeout(pendingTimer);
   pendingTimer = setTimeout(() => {
-    pending = false;
+    pending = null;
     render();
-    if (!state.selectedCard && phase === 'connected') announce('No confirmation yet. You can try your choice again.');
+    if (state.revision === revision && phase === 'connected') announce('No confirmation yet. You can try that action again.');
   }, 5000);
 }
 
 function renderCards() {
-  const canSelect = (mode === 'practice' || (mode === 'guest' && phase === 'connected'))
+  const selectable = (mode === 'practice' || (phase === 'connected' && canSelect(state, mode)))
     && !pending && !state.selectedCard;
-  const key = JSON.stringify([state.cards, state.selectedCard, canSelect]);
+  const key = JSON.stringify([state.cards, state.selectedCard, selectable]);
   if (cardsRenderKey === key) return;
   cardsRenderKey = key;
   const grid = $('cards-grid');
@@ -1686,7 +1760,7 @@ function renderCards() {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `playing-card ${card.color}${selected ? ' selected' : ''}`;
-    button.disabled = !canSelect;
+    button.disabled = !selectable;
     button.dataset.card = id;
     button.setAttribute('aria-label', `${card.name}${selected ? ', selected' : ''}`);
     button.setAttribute('aria-pressed', String(selected));
@@ -1709,10 +1783,10 @@ function renderCards() {
       check.className = 'card-check'; check.textContent = '✓'; check.setAttribute('aria-hidden', 'true');
       button.append(check);
     }
-    button.addEventListener('click', () => selectFromTable(id));
+    button.addEventListener('click', () => act('select', id));
     grid.append(button);
   }
-  if (oldFocus && canSelect) grid.querySelector(`[data-card="${oldFocus}"]`)?.focus({ preventScroll: true });
+  if (oldFocus && selectable) grid.querySelector(`[data-card="${oldFocus}"]`)?.focus({ preventScroll: true });
 }
 
 function render() {
@@ -1720,6 +1794,23 @@ function render() {
   const practice = mode === 'practice';
   const host = mode === 'host';
   const ended = phase === 'ended';
+  const connecting = phase === 'connecting';
+  const paused = phase === 'reconnecting';
+  const nextDealer = getNextDealer(state);
+  const chooser = state.dealer === 'host' ? 'guest' : 'host';
+  const myDeal = practice || canDeal(state, mode);
+  const myChoice = practice || canSelect(state, mode);
+  const dealerName = state.dealer === 'host' ? 'Host' : 'Guest';
+  const nextDealerName = nextDealer === 'host' ? 'Host' : 'Guest';
+  const chooserName = chooser === 'host' ? 'Host' : 'Guest';
+  const waitingForGuest = host && phase === 'waiting' && !guestPresent;
+  const roleHint = role => {
+    const identity = mode === role ? 'You' : 'Your friend';
+    const turn = state.selectedCard
+      ? (nextDealer === role ? 'Deal next' : 'Choose next')
+      : (state.dealer === role ? (state.round ? 'Dealt this hand' : 'First deal') : 'Choosing');
+    return `${identity} · ${turn}`;
+  };
   $('setup-panel').hidden = active;
   $('active-panel').hidden = !active;
   $('create-button').disabled = busy || localFile;
@@ -1728,23 +1819,34 @@ function render() {
   $('join-input').disabled = busy || localFile;
   $('create-button').textContent = busy ? 'Connecting…' : '＋ Create a table';
   $('role-label').textContent = practice ? 'LOCAL PRACTICE' : host ? 'YOU ARE THE HOST' : 'YOU ARE THE GUEST';
-  $('session-title').textContent = ended ? 'Until next time.' : practice ? 'Give it a little try.' : host ? 'A seat for a friend.' : 'You’re at the table.';
-  $('host-seat-label').textContent = practice ? 'You deal' : host ? 'You' : ended ? 'Disconnected' : 'Your friend';
-  $('guest-seat-label').textContent = practice ? 'You choose' : host ? (guestPresent ? 'Connected' : 'Waiting for a friend') : 'You';
-  $('host-dot').className = `seat-dot${!ended && active ? ' online' : ''}`;
+  $('session-title').textContent = ended ? 'Until next time.' : practice ? 'Practice both turns.' : connecting ? 'Opening your table…' : paused ? 'The game is paused.'
+    : waitingForGuest ? 'Waiting for your friend.' : state.selectedCard ? (myDeal ? 'Your turn to deal.' : 'Your friend deals next.')
+    : !state.round ? (myDeal ? 'Your turn to deal.' : 'Waiting for the first deal.')
+    : myChoice ? 'Your turn to choose.' : 'Your friend is choosing.';
+  $('host-seat-label').textContent = ended ? 'Disconnected' : practice ? 'You practice this side' : roleHint('host');
+  $('guest-seat-label').textContent = ended ? 'Not connected' : practice ? 'And this side, too' : host && !guestPresent ? 'Waiting for a friend' : roleHint('guest');
+  $('host-dot').className = `seat-dot${!ended && !connecting && active ? ' online' : ''}`;
   $('guest-dot').className = `seat-dot${!ended && (practice || guestPresent || (mode === 'guest' && phase === 'connected')) ? ' online' : ''}`;
-  $('host-dot').setAttribute('aria-label', ended ? 'Not connected' : 'Present');
+  $('host-dot').setAttribute('aria-label', $('host-dot').classList.contains('online') ? 'Present' : 'Not connected');
   $('guest-dot').setAttribute('aria-label', $('guest-dot').classList.contains('online') ? 'Present' : 'Not connected');
   $('invite-section').hidden = !host || !inviteLink || ended;
   $('invite-output').value = inviteLink;
-  $('deal-button').hidden = !(host || practice);
-  $('deal-button').disabled = ended || !['waiting', 'connected'].includes(phase);
-  $('deal-button').textContent = state.round ? 'Deal again ↻' : 'Deal ten cards ↻';
+  $('deal-button').hidden = !myDeal;
+  $('deal-button').disabled = ended || pending !== null || !(phase === 'connected' || (host && phase === 'waiting'));
+  $('deal-button').textContent = pending === 'deal' ? 'Dealing…' : state.selectedCard ? 'Deal next hand ↻' : state.round ? 'Deal again ↻' : 'Deal ten cards ↻';
   $('leave-button').textContent = ended ? 'Back to start' : practice ? 'Exit practice' : host ? 'End game' : 'Leave table';
-  $('session-guidance').textContent = ended ? 'This session has ended. Start a fresh table to play again.' : practice
-    ? 'You can deal and choose here. Create a real table when you’re ready to invite someone.'
-    : host ? 'Keep this page open. Closing or refreshing it ends the game.'
-      : 'Your host deals. Pick one card each round. Both screens will show your choice.';
+  let guidance;
+  if (ended) guidance = 'This session has ended. Start a fresh table to play again.';
+  else if (connecting) guidance = host ? 'Preparing your invite link. Keep this page open.' : 'Connecting to your host. Keep this page open.';
+  else if (paused) guidance = 'The connection was interrupted. Wait for it to recover before dealing or choosing.';
+  else if (practice) guidance = 'Play both sides here. After each choice, the deal passes to the other player.';
+  else if (waitingForGuest) guidance = !state.round ? 'Invite your friend. You can deal the first hand while you wait.' : 'Waiting for your friend to join. Their place in the current hand is saved.';
+  else if (state.selectedCard) guidance = myDeal ? 'Your choice is recorded. Deal the next hand for your friend.' : 'Your friend can now deal the next hand for you.';
+  else if (myChoice) guidance = 'Choose one card. Then you can deal the next hand.';
+  else if (state.round) guidance = 'Your friend is choosing a card. You can re-deal before they choose.';
+  else guidance = myDeal ? 'Deal ten cards for your friend to choose from.' : 'Your friend will deal the first hand. The cards will appear here.';
+  if (host && !ended && !connecting) guidance += ' Keep this page open to keep the game going.';
+  $('session-guidance').textContent = guidance;
   $('round-label').textContent = state.round ? `DEAL ${String(state.round).padStart(2, '0')} · 10 CARDS` : 'YOUR SHARED TABLE';
   $('status-pill').dataset.phase = phase;
   const labels = { idle: 'Not connected', connecting: 'Connecting…', waiting: 'Waiting for guest', connected: practice ? 'Local practice' : 'Connected · 2 of 2', reconnecting: 'Connection interrupted', ended: 'Session ended' };
@@ -1752,15 +1854,20 @@ function render() {
   $('felt').classList.toggle('empty', !state.cards.length);
   $('felt').classList.toggle('ended', ended);
   $('table-empty').hidden = Boolean(state.cards.length);
-  $('empty-title').textContent = ended ? 'The table is closed.' : mode === 'guest' ? 'Take a little seat.' : active ? 'Your table is ready.' : 'Ready when you are.';
-  $('empty-copy').textContent = ended ? 'Start a new game for a fresh deal.' : mode === 'guest' ? 'The cards will appear when your host deals.' : active ? 'Deal ten cards to get things going.' : 'Create a table to deal your first ten cards.';
-  $('felt-label').textContent = practice ? 'PRACTICE · JUST ON THIS DEVICE' : 'TEN CARDS · ONE CHOICE';
-  $('table-instruction').textContent = ended ? 'This game has ended.' : pending ? 'Waiting for the host to confirm…' : state.selectedCard ? 'A choice has been made. Ready for another deal?' : state.cards.length
-    ? (host ? 'Your guest can choose one of these cards.' : 'Pick the card that catches your eye.')
+  $('empty-title').textContent = ended ? 'The table is closed.' : connecting ? 'Connecting your table…' : mode === 'guest' ? 'Take a little seat.' : active ? 'Your table is ready.' : 'Ready when you are.';
+  $('empty-copy').textContent = ended ? 'Start a new game for a fresh deal.' : connecting
+    ? (host ? 'Setting up your invite link. Please wait.' : 'Waiting for your host to accept the connection.')
+    : mode === 'guest' ? 'The cards will appear when your host deals.' : active ? 'Deal ten cards to get things going.' : 'Create a table to deal your first ten cards.';
+  $('felt-label').textContent = `${practice ? 'PRACTICE · ' : ''}${dealerName.toUpperCase()} DEALS · ${chooserName.toUpperCase()} CHOOSES`;
+  $('table-instruction').textContent = ended ? 'This game has ended.' : paused ? 'Connection interrupted. The game is paused.' : pending ? (pending === 'deal' ? 'Dealing the next hand…' : 'Confirming your choice…')
+    : waitingForGuest && state.round ? 'Waiting for your friend to join the table.'
+    : state.selectedCard ? (practice ? `${nextDealerName} deals next. You can play that side, too.` : myDeal ? 'Your turn to deal the next hand.' : `${nextDealerName} can now deal the next hand for you.`) : state.cards.length
+    ? (myChoice ? 'Pick the card that catches your eye.' : `${chooserName} can choose one of these cards.`)
     : 'A full deck. A fresh deal. A shared moment.';
   $('selection-copy').textContent = state.selectedCard
     ? `Selected: ${describeCard(state.selectedCard).name}.`
-    : state.round ? (host ? 'Waiting for your guest’s choice.' : 'Which one will it be?') : 'Every good choice starts with a deal.';
+    : state.round ? (waitingForGuest ? 'Waiting for your friend to join.' : myChoice ? 'Which one will it be?' : `Waiting for the ${chooser}'s choice.`) : 'Every good choice starts with a deal.';
+  $('selection-tag').textContent = `${nextDealerName.toUpperCase()} DEALS NEXT`;
   $('selection-tag').hidden = !state.selectedCard;
   renderCards();
 }
@@ -1772,14 +1879,18 @@ function newSession(Peer, currentOperation) {
     onStatus(status) {
       if (!current()) return;
       phase = status.phase;
-      if (phase !== 'connected') { pending = false; clearTimeout(pendingTimer); }
+      if (phase !== 'connected') { pending = null; clearTimeout(pendingTimer); }
       announce(status.message);
       render();
     },
     onState(next) {
       if (!current()) return;
-      state = next; pending = false; clearTimeout(pendingTimer);
-      if (next.selectedCard) announce('Choice recorded.');
+      const previousRound = state.round;
+      state = next; pending = null; clearTimeout(pendingTimer);
+      if (next.selectedCard) announce(getNextDealer(next) === mode
+        ? 'Choice recorded. You can now deal the next hand.' : 'Choice recorded. Your friend can deal next.');
+      else if (next.round > previousRound) announce(canSelect(next, mode)
+        ? 'Ten new cards. It’s your turn to choose.' : 'Your hand is dealt. Your friend can choose a card.');
       render();
     },
     onInvite(invite) {
@@ -1813,7 +1924,7 @@ async function startNetwork(role, invite) {
     if (operation !== currentOperation) return;
     // Invalidate callbacks before closing so a failed start returns to a usable form.
     operation++;
-    session?.close();
+    try { session?.close(); } catch { /* A cleanup failure must not hide the original error. */ }
     session = null;
     mode = 'idle'; phase = 'idle';
     inviteLink = ''; guestPresent = false; state = createGame();
@@ -1830,7 +1941,7 @@ function reset() {
   session?.close();
   session = null;
   mode = 'idle'; phase = 'idle'; state = createGame();
-  inviteLink = ''; guestPresent = false; pending = false; busy = false;
+  inviteLink = ''; guestPresent = false; pending = null; busy = false;
   clearTimeout(pendingTimer);
   clearError();
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
@@ -1854,10 +1965,7 @@ $('practice-button').addEventListener('click', () => {
   announce('Local practice: you control both the deal and the choice. No one else is connected.');
   render();
 });
-$('deal-button').addEventListener('click', () => {
-  if (mode === 'practice') { state = dealCards(state); render(); }
-  else if (mode === 'host') session?.deal();
-});
+$('deal-button').addEventListener('click', () => act('deal'));
 $('leave-button').addEventListener('click', () => {
   if (phase === 'ended' || mode === 'practice') reset();
   else session?.close();
