@@ -1,0 +1,1910 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173f35">
+  <meta name="description" content="A little card table for two. Deal ten cards, invite a friend, and share a choice.">
+  <meta name="referrer" content="no-referrer">
+  <title>Ten Cards — A table for two</title>
+  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMxNzNmMzUiLz48cmVjdCB4PSIxNCIgeT0iMTAiIHdpZHRoPSIzNiIgaGVpZ2h0PSI0NCIgcng9IjQiIGZpbGw9IiNmZmZkZjQiLz48cGF0aCBkPSJNMzIgMTljLTQgNi0xMiA5LTEyIDE1YTcgNyAwIDAgMCAxMSA1bC0zIDhoOGwtMy04YTcgNyAwIDAgMCAxMS01YzAtNi04LTktMTItMTVaIiBmaWxsPSIjMjQ0ZjQwIi8+PC9zdmc+Cg==" type="image/svg+xml">
+  <style>
+:root {
+  --paper:#f7f5ef;
+  --ink:#25382f;
+  --muted:#7a8076;
+  --line:#ddded3;
+  --green:#244f40;
+  --felt:#173f35;
+  --accent:#e7c87b;
+  --red:#b95043;
+  --sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --serif:Georgia,"Times New Roman",serif;
+}
+* {
+  box-sizing:border-box;
+}
+body {
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:14px;
+  line-height:1.6;
+}
+button,input {
+  font:inherit;
+}
+button,a,input {
+  -webkit-tap-highlight-color:transparent;
+}
+button {
+  cursor:pointer;
+}
+button:disabled {
+  cursor:default;
+  opacity:.5;
+}
+a {
+  color:inherit;
+}
+button:focus-visible,a:focus-visible,input:focus-visible {
+  outline:3px solid #ae8b38;
+  outline-offset:4px;
+}
+[hidden] {
+  display:none!important;
+}
+.app-shell {
+  max-width:1320px;
+  margin:0 auto;
+  padding:0 60px;
+}
+.site-header {
+  height:110px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid var(--line);
+}
+.brand {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  text-decoration:none;
+  font:25px var(--serif);
+  letter-spacing:-.7px;
+}
+.brand-caption {
+  display:block;
+  margin-top:6px;
+  font:9px var(--sans);
+  letter-spacing:2.3px;
+  color:#737b70;
+}
+.brand-mark {
+  display:block;
+  position:relative;
+  width:42px;
+  height:44px;
+}
+.brand-mark span {
+  position:absolute;
+  width:28px;
+  height:36px;
+  display:grid;
+  place-items:center;
+  background:var(--paper);
+  border:1px solid #446052;
+  border-radius:4px;
+  font:22px var(--serif);
+  top:4px;
+  left:0;
+  transform:rotate(-14deg);
+}
+.brand-mark span+span {
+  color:var(--red);
+  left:15px;
+  top:7px;
+  transform:rotate(12deg);
+}
+.text-button {
+  border:0;
+  background:none;
+  padding:7px 0;
+  color:var(--ink);
+  font-size:12px;
+}
+.help-button {
+  display:flex;
+  gap:25px;
+}
+.help-button span {
+  font-size:16px;
+}
+.intro {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  padding:43px 0 35px;
+}
+.eyebrow {
+  font-size:9px;
+  font-weight:650;
+  letter-spacing:1.7px;
+  margin:0 0 12px;
+  color:var(--muted);
+}
+h1 {
+  font:50px/1.08 var(--serif);
+  letter-spacing:-1.7px;
+  margin:0;
+  font-weight:400;
+}
+h2 {
+  font:25px/1.25 var(--serif);
+  font-weight:400;
+  margin:0 0 14px;
+  letter-spacing:-.5px;
+}
+.intro-copy {
+  font-size:13px;
+  color:#747c70;
+  margin:0 0 3px;
+  line-height:1.8;
+}
+.game-layout {
+  display:grid;
+  grid-template-columns:273px minmax(0,1fr);
+  gap:34px;
+  align-items:start;
+}
+.sidebar {
+  display:grid;
+  gap:18px;
+}
+.session-panel {
+  padding:25px 23px 20px;
+  background:#fbfaf6;
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+.session-panel h2 {
+  font-size:26px;
+}
+.muted {
+  font-size:12px;
+  color:var(--muted);
+  margin:0 0 22px;
+  line-height:1.8;
+}
+.button {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  min-height:44px;
+  border:1px solid transparent;
+  border-radius:5px;
+  width:100%;
+  font-size:12px;
+  font-weight:550;
+  padding:10px 12px;
+  transition:background .15s,transform .15s;
+}
+.button:hover:not(:disabled) {
+  transform:translateY(-1px);
+}
+.primary {
+  background:var(--green);
+  color:#fff;
+}
+.primary:hover:not(:disabled) {
+  background:#183b2d;
+}
+.secondary {
+  background:transparent;
+  border-color:#cbd1c4;
+  color:var(--ink);
+}
+.secondary:hover:not(:disabled) {
+  background:#f0f1e9;
+}
+.divider {
+  position:relative;
+  text-align:center;
+  margin:23px 0;
+  color:#8c9085;
+  font-size:10px;
+}
+.divider:before {
+  content:"";
+  position:absolute;
+  top:50%;
+  left:0;
+  right:0;
+  height:1px;
+  background:#e4e4db;
+}
+.divider span {
+  position:relative;
+  background:#fbfaf6;
+  padding:0 10px;
+}
+label {
+  display:block;
+  font-size:10px;
+  font-weight:600;
+  margin-bottom:7px;
+}
+input {
+  display:block;
+  width:100%;
+  padding:11px 10px;
+  border:1px solid #daddd2;
+  background:#fffefb;
+  border-radius:5px;
+  min-height:42px;
+  font-size:11px;
+  color:#3c5141;
+  min-width:0;
+}
+input::placeholder {
+  color:#9a9c91;
+}
+#join-button,#copy-button {
+  margin-top:9px;
+}
+.input-hint {
+  font-size:10px;
+  color:#8a8f81;
+  margin:8px 0 0;
+}
+.practice-link {
+  font-size:10px;
+  background:none;
+  border:0;
+  border-top:1px solid #e5e5dc;
+  padding:18px 0 0;
+  margin-top:24px;
+  color:#6c7b68;
+  text-align:left;
+  line-height:1.8;
+}
+.practice-link:hover {
+  text-decoration:underline;
+}
+.note-card {
+  display:flex;
+  gap:13px;
+  padding:0 8px;
+}
+.note-suit {
+  font:27px var(--serif);
+  color:#6c8169;
+  line-height:1.5;
+}
+.note-card strong {
+  font-size:10px;
+  font-weight:550;
+}
+.note-card p {
+  font-size:10px;
+  line-height:1.8;
+  margin:4px 0;
+  color:#878d7f;
+}
+.table-toolbar {
+  height:34px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  font-size:9px;
+  letter-spacing:1.4px;
+  color:#777f71;
+}
+.status-pill {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  border:1px solid #dbded2;
+  border-radius:20px;
+  padding:2px 9px;
+  font-size:9px;
+  letter-spacing:0;
+  margin-top:-3px;
+}
+.status-dot,.seat-dot {
+  height:5px;
+  width:5px;
+  display:inline-block;
+  background:#a7ac9f;
+  border-radius:50%;
+}
+.status-pill[data-phase="connected"] .status-dot,.status-pill[data-phase="waiting"] .status-dot,.online {
+  background:#55916d;
+}
+.status-pill[data-phase="connecting"] .status-dot,.status-pill[data-phase="reconnecting"] .status-dot {
+  background:#b2944a;
+  animation:pulse 1.5s infinite;
+}
+.status-pill[data-phase="ended"] .status-dot {
+  background:#b66b54;
+}
+.felt {
+  position:relative;
+  background:var(--felt);
+  border:1px solid #13352c;
+  border-radius:13px;
+  padding:24px 30px 18px;
+  min-height:400px;
+  overflow:hidden;
+  box-shadow:0 8px 20px #163c2d0c,inset 0 0 80px #0c2a211c;
+}
+.felt:before {
+  content:"";
+  pointer-events:none;
+  position:absolute;
+  inset:9px;
+  border:1px solid #7c9d762b;
+  border-radius:7px;
+}
+.felt-heading {
+  display:flex;
+  gap:18px;
+  align-items:center;
+  justify-content:center;
+  color:#98ad94;
+  font-size:8px;
+  letter-spacing:2px;
+  margin:3px 20px 26px;
+}
+.felt-rule {
+  height:1px;
+  background:#718f6d3d;
+  width:46px;
+}
+.cards-grid {
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:14px 15px;
+  position:relative;
+  z-index:1;
+}
+.playing-card,.card-back {
+  position:relative;
+  aspect-ratio:.7;
+  border-radius:6px;
+  min-width:0;
+  border:1px solid #edece3;
+  background:#fffdf4;
+  box-shadow:0 3px 5px #09261f38;
+}
+.playing-card {
+  padding:0;
+  color:#263c36;
+  text-align:left;
+  transition:transform .18s,box-shadow .18s,outline .18s;
+  opacity:1!important;
+  overflow:hidden;
+}
+.playing-card.red {
+  color:var(--red);
+}
+.playing-card:not(:disabled):hover {
+  transform:translateY(-5px);
+  box-shadow:0 7px 12px #061c1644;
+}
+.playing-card.selected {
+  outline:3px solid var(--accent);
+  outline-offset:3px;
+  transform:translateY(-4px);
+  box-shadow:0 0 0 6px #e7c87b16;
+}
+.playing-card:disabled {
+  color:#263c36;
+}
+.playing-card.red:disabled {
+  color:var(--red);
+}
+.card-corner {
+  position:absolute;
+  left:10%;
+  top:6%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  font:clamp(13px,1.7vw,23px)/1.1 var(--serif);
+}
+.card-corner .suit {
+  font-size:.85em;
+  margin-top:1px;
+}
+.card-corner.bottom {
+  left:auto;
+  top:auto;
+  right:10%;
+  bottom:6%;
+  transform:rotate(180deg);
+}
+.card-pip {
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  font:clamp(23px,3.6vw,47px) var(--serif);
+}
+.card-check {
+  position:absolute;
+  right:5px;
+  top:5px;
+  width:16px;
+  height:16px;
+  border-radius:100%;
+  background:var(--accent);
+  color:#264132;
+  font:11px var(--sans);
+  display:grid;
+  place-items:center;
+}
+.card-back {
+  background:#214b3d;
+  border-color:#6b886650;
+  box-shadow:none;
+  opacity:.55;
+}
+.card-back:after {
+  content:"";
+  position:absolute;
+  inset:7px;
+  border:1px solid #7d9a702e;
+  border-radius:3px;
+  background:repeating-linear-gradient(45deg,transparent 0 6px,#8bab7913 6px 7px);
+}
+.felt.empty .cards-grid {
+  opacity:.37;
+}
+.table-empty {
+  position:absolute;
+  z-index:2;
+  inset:65px 20px 51px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  text-align:center;
+  background:radial-gradient(ellipse at center,#173f35 0%,#173f35ee 38%,transparent 76%);
+  pointer-events:none;
+}
+.empty-suit {
+  font:37px var(--serif);
+  color:#a9bd94;
+  margin-bottom:12px;
+}
+.table-empty h2 {
+  font-size:29px;
+  color:#eef0da;
+  margin:0 0 10px;
+  letter-spacing:-.6px;
+}
+.table-empty p {
+  font-size:11px;
+  max-width:230px;
+  color:#a7b79d;
+  margin:0;
+  line-height:1.8;
+}
+.felt-footer {
+  margin-top:26px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  color:#9daf94;
+  font-size:9px;
+  gap:10px;
+}
+.felt-deck {
+  font:12px var(--serif);
+  border:1px solid #91aa772f;
+  border-radius:50%;
+  height:26px;
+  width:26px;
+  display:grid;
+  place-items:center;
+  flex-shrink:0;
+}
+.selection-panel {
+  min-height:82px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  gap:15px;
+  padding:16px 20px;
+  margin-top:17px;
+}
+.selection-icon {
+  font:30px var(--serif);
+  color:#809174;
+}
+.selection-panel .eyebrow {
+  font-size:8px;
+  margin:0 0 3px;
+}
+.selection-panel p {
+  font-size:12px;
+  margin:0;
+  color:#64725e;
+}
+.selection-tag {
+  font-size:8px;
+  color:#6c7e60;
+  letter-spacing:1px;
+  margin-left:auto;
+}
+.connection-message {
+  font-size:10px;
+  color:#808879;
+  margin:12px 3px 0;
+  min-height:17px;
+}
+.error-panel {
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:space-between;
+  border:1px solid #d8b8a7;
+  background:#fff5ed;
+  border-radius:6px;
+  padding:10px 12px;
+  margin-top:12px;
+  color:#864b39;
+  font-size:12px;
+}
+.error-panel .text-button {
+  color:#864b39;
+  font-size:20px;
+}
+.site-footer {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:39px;
+  border-top:1px solid var(--line);
+  padding:21px 0 25px;
+  font-size:10px;
+  color:#94998b;
+}
+.site-footer>span+span {
+  font-size:8px;
+  letter-spacing:1px;
+}
+.site-footer>span+span span {
+  margin:0 6px;
+}
+.seats {
+  display:grid;
+  gap:13px;
+  margin:23px 0;
+}
+.seat {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:12px;
+}
+.seat small {
+  display:block;
+  font-size:9px;
+  color:#89917f;
+  margin-top:1px;
+}
+.avatar {
+  display:grid;
+  place-items:center;
+  width:32px;
+  height:32px;
+  border-radius:100%;
+  background:#e7ebdf;
+  color:#45623b;
+  font:15px var(--serif);
+}
+.guest-avatar {
+  background:#eeeade;
+  color:#927f58;
+}
+.seat-dot {
+  margin-left:auto;
+  flex-shrink:0;
+}
+.session-guidance {
+  font-size:11px;
+  line-height:1.8;
+  color:#828b78;
+  margin:20px 0 16px;
+}
+.end-button {
+  display:block;
+  margin:14px auto 0;
+  color:#8c7563;
+  font-size:10px;
+}
+.help-panel {
+  padding:24px;
+  border:1px solid var(--line);
+  border-top:0;
+  border-radius:0 0 10px 10px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:24px;
+  background:#eeeee4;
+}
+.help-panel strong {
+  font-size:12px;
+  font-weight:550;
+}
+.help-panel p {
+  margin:6px 0 0;
+  font-size:11px;
+  color:#79836f;
+}
+.step-number {
+  color:#8b9877;
+  font:17px var(--serif);
+  margin-right:12px;
+}
+.help-panel .help-footnote {
+  grid-column:1/-1;
+  font-size:10px;
+  margin:0;
+}
+.toast {
+  position:fixed;
+  bottom:24px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#244f40;
+  color:#fff;
+  border-radius:6px;
+  box-shadow:0 5px 20px #0002;
+  padding:11px 20px;
+  font-size:12px;
+  z-index:10;
+}
+.noscript {
+  padding:20px;
+  text-align:center;
+  background:#fff0e5;
+}
+.felt.ended {
+  opacity:.72;
+}
+.felt.ended .playing-card {
+  filter:grayscale(.45);
+}
+@keyframes pulse {
+  50% {
+    opacity:.35;
+  }
+}
+@media(min-width:1280px) {
+  .felt {
+    padding:25px 38px 20px;
+  }
+  .cards-grid {
+    gap:17px 20px;
+  }
+}
+@media(max-width:1000px) {
+  .app-shell {
+    padding:0 30px;
+  }
+  .game-layout {
+    grid-template-columns:240px minmax(0,1fr);
+    gap:22px;
+  }
+  .session-panel {
+    padding:22px 18px;
+  }
+  .felt {
+    padding:22px 20px 16px;
+    min-height:360px;
+  }
+  .cards-grid {
+    gap:12px;
+  }
+  .felt-heading {
+    margin:3px 0 24px;
+    font-size:7px;
+    gap:10px;
+  }
+  .felt-footer {
+    font-size:8px;
+  }
+  .table-empty h2 {
+    font-size:25px;
+  }
+  .intro {
+    padding-top:32px;
+  }
+  h1 {
+    font-size:45px;
+  }
+  .card-corner {
+    font-size:17px;
+  }
+  .card-pip {
+    font-size:33px;
+  }
+}
+@media(max-width:760px) {
+  .app-shell {
+    max-width:620px;
+    padding:0 22px;
+  }
+  .site-header {
+    height:86px;
+  }
+  .brand {
+    font-size:23px;
+  }
+  .intro {
+    padding:30px 0 27px;
+    align-items:center;
+  }
+  .intro-copy {
+    font-size:11px;
+    max-width:130px;
+  }
+  h1 {
+    font-size:39px;
+  }
+  .game-layout {
+    grid-template-columns:1fr;
+    gap:25px;
+  }
+  .sidebar {
+    gap:0;
+  }
+  .session-panel {
+    padding:22px;
+  }
+  .session-panel h2 {
+    font-size:25px;
+  }
+  .note-card {
+    display:none;
+  }
+  .table-section {
+    grid-row:2;
+  }
+  .felt {
+    padding:22px 24px 16px;
+    min-height:0;
+  }
+  .card-corner {
+    font-size:clamp(14px,3.2vw,22px);
+  }
+  .card-pip {
+    font-size:clamp(25px,7vw,44px);
+  }
+  .cards-grid {
+    gap:14px;
+  }
+  .felt-heading {
+    margin-bottom:23px;
+    font-size:8px;
+  }
+  .felt-footer {
+    margin-top:23px;
+  }
+  #setup-panel {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    column-gap:20px;
+  }
+  #setup-panel>.eyebrow,#setup-panel>h2,#setup-panel>.muted {
+    grid-column:1/-1;
+  }
+  #setup-panel>.muted {
+    margin-bottom:16px;
+  }
+  #create-button {
+    height:44px;
+    margin-top:22px;
+  }
+  .divider {
+    display:none;
+  }
+  #join-form {
+    grid-column:2;
+    grid-row:4/7;
+  }
+  .practice-link {
+    grid-column:1;
+    margin-top:13px;
+    padding-top:10px;
+  }
+  .seats {
+    grid-template-columns:1fr 1fr;
+    margin:17px 0;
+  }
+  #invite-section {
+    display:grid;
+    grid-template-columns:1fr 150px;
+    column-gap:9px;
+  }
+  #invite-section label,#invite-section .input-hint {
+    grid-column:1/-1;
+  }
+  #copy-button {
+    margin:0;
+  }
+  .site-footer {
+    margin-top:27px;
+  }
+  .help-panel {
+    gap:15px;
+    padding:20px;
+  }
+  .help-panel strong {
+    display:block;
+  }
+  .help-panel .step-number {
+    display:block;
+    margin-bottom:5px;
+  }
+}
+@media(max-width:430px) {
+  .app-shell {
+    padding:0 16px;
+  }
+  .intro-copy {
+    display:none;
+  }
+  h1 {
+    font-size:40px;
+  }
+  .intro {
+    padding:27px 0;
+  }
+  .eyebrow {
+    font-size:8px;
+  }
+  .help-button {
+    font-size:11px;
+    gap:10px;
+  }
+  .game-layout {
+    gap:22px;
+  }
+  #setup-panel {
+    display:block;
+  }
+  #create-button {
+    margin-top:0;
+  }
+  .divider {
+    display:block;
+    margin:19px 0;
+  }
+  .practice-link {
+    margin-top:18px;
+    padding-top:13px;
+  }
+  .felt {
+    padding:20px 16px 14px;
+  }
+  .cards-grid {
+    gap:11px 9px;
+  }
+  .felt-heading {
+    font-size:7px;
+    letter-spacing:1.3px;
+    margin-bottom:19px;
+  }
+  .felt-rule {
+    width:25px;
+  }
+  .card-corner {
+    font-size:14px;
+  }
+  .card-pip {
+    font-size:30px;
+  }
+  .table-empty h2 {
+    font-size:25px;
+  }
+  .table-empty {
+    inset:48px 10px 42px;
+  }
+  .table-empty p {
+    font-size:10px;
+  }
+  .empty-suit {
+    font-size:28px;
+    margin-bottom:8px;
+  }
+  .felt-footer {
+    margin-top:20px;
+    font-size:8px;
+  }
+  .selection-panel {
+    padding:13px;
+    gap:10px;
+  }
+  .selection-panel p {
+    font-size:11px;
+  }
+  .selection-tag {
+    font-size:7px;
+  }
+  .site-footer>span:first-child {
+    max-width:120px;
+  }
+  .site-footer>span+span {
+    font-size:7px;
+    letter-spacing:.6px;
+  }
+  #invite-section {
+    grid-template-columns:1fr;
+  }
+  #copy-button {
+    margin-top:9px;
+  }
+  .help-panel {
+    grid-template-columns:1fr;
+  }
+  .help-panel strong {
+    display:inline;
+  }
+  .help-panel .step-number {
+    display:inline;
+  }
+  .help-panel p {
+    margin-left:31px;
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*:before,*:after {
+    animation:none!important;
+    transition:none!important;
+  }
+}
+
+</style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Ten Cards home">
+        <span class="brand-mark" aria-hidden="true"><span>♠</span><span>♥</span></span>
+        <span>Ten Cards<span class="brand-caption">A TABLE FOR TWO</span></span>
+      </a>
+      <button class="text-button help-button" id="help-toggle" aria-expanded="false" aria-controls="how-to-play">How to play <span aria-hidden="true">↗</span></button>
+    </header>
+
+    <section class="help-panel" id="how-to-play" hidden aria-label="How to play">
+      <div><span class="step-number">01</span><strong>Open a table</strong><p>One person hosts and shares an invite link.</p></div>
+      <div><span class="step-number">02</span><strong>Deal ten cards</strong><p>The host deals. Both people see the same cards.</p></div>
+      <div><span class="step-number">03</span><strong>Make a choice</strong><p>The guest picks one card. Both screens show it.</p></div>
+      <p class="help-footnote">A fresh deal clears the choice. The game ends when the host leaves or refreshes.</p>
+    </section>
+
+    <main>
+      <section class="intro">
+        <div><p class="eyebrow">ONE DECK. TWO PEOPLE.</p><h1>A little table.<br>A shared choice.</h1></div>
+        <p class="intro-copy">Ten cards, face up.<br>Invite someone. See what they pick.</p>
+      </section>
+
+      <div class="game-layout">
+        <aside class="sidebar" aria-label="Game controls">
+          <section class="session-panel" id="setup-panel">
+            <p class="eyebrow">TAKE A SEAT</p>
+            <h2>Start something small.</h2>
+            <p class="muted">Open a table and invite one other person.</p>
+            <button class="button primary" id="create-button"><span aria-hidden="true">＋</span> Create a table</button>
+            <div class="divider"><span>or join a friend</span></div>
+            <form id="join-form">
+              <label for="join-input">Invite link</label>
+              <input id="join-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Paste their invite link" aria-describedby="join-hint">
+              <button class="button secondary" id="join-button" type="submit">Join table <span aria-hidden="true">↗</span></button>
+              <p class="input-hint" id="join-hint">You’ll join as the guest.</p>
+            </form>
+            <button class="practice-link" id="practice-button">Just exploring? Try it on this device <span aria-hidden="true">→</span></button>
+          </section>
+
+          <section class="session-panel" id="active-panel" hidden>
+            <p class="eyebrow" id="role-label">YOUR TABLE</p>
+            <h2 id="session-title">A seat for a friend.</h2>
+            <div class="seats" aria-label="Players">
+              <div class="seat"><span class="avatar" aria-hidden="true">H</span><span>Host<small id="host-seat-label">You</small></span><span class="seat-dot online" id="host-dot" aria-label="Present"></span></div>
+              <div class="seat"><span class="avatar guest-avatar" aria-hidden="true">G</span><span>Guest<small id="guest-seat-label">Waiting for a friend</small></span><span class="seat-dot" id="guest-dot" aria-label="Not connected"></span></div>
+            </div>
+            <div id="invite-section" hidden>
+              <label for="invite-output">Your invite link</label>
+              <input id="invite-output" type="text" readonly aria-label="Your invite link" spellcheck="false">
+              <button class="button secondary" id="copy-button">Copy invite link <span aria-hidden="true">↗</span></button>
+              <p class="input-hint">Anyone with this link can take the guest seat.</p>
+            </div>
+            <p class="session-guidance" id="session-guidance">Your game lasts while this page stays open.</p>
+            <button class="button primary" id="deal-button" hidden>Deal ten cards <span aria-hidden="true">↻</span></button>
+            <button class="text-button end-button" id="leave-button">End game</button>
+          </section>
+
+          <section class="note-card"><span class="note-suit" aria-hidden="true">♣</span><div><strong>One table, two screens.</strong><p>You both see the same cards. Only the host deals.</p></div></section>
+        </aside>
+
+        <section class="table-section" aria-label="Shared card table">
+          <div class="table-toolbar"><span id="round-label">YOUR SHARED TABLE</span><span class="status-pill" id="status-pill"><span class="status-dot" aria-hidden="true"></span><span id="status-label">Not connected</span></span></div>
+          <div class="felt" id="felt">
+            <div class="felt-heading"><span class="felt-rule"></span><span id="felt-label">TEN CARDS · ONE CHOICE</span><span class="felt-rule"></span></div>
+            <div class="cards-grid" id="cards-grid" aria-label="Ten dealt cards"></div>
+            <div class="table-empty" id="table-empty"><span class="empty-suit" aria-hidden="true">♠</span><h2 id="empty-title">Ready when you are.</h2><p id="empty-copy">Create a table to deal your first ten cards.</p></div>
+            <div class="felt-footer"><span id="table-instruction">A full deck. A fresh deal. A shared moment.</span><span class="felt-deck" aria-hidden="true">52</span></div>
+          </div>
+          <div class="selection-panel" aria-live="polite" aria-atomic="true"><span class="selection-icon" aria-hidden="true">◇</span><div><span class="eyebrow">THE CHOICE</span><p id="selection-copy">Every good choice starts with a deal.</p></div><span id="selection-tag" class="selection-tag" hidden>SELECTED</span></div>
+          <p id="connection-message" class="connection-message" role="status" aria-live="polite">Create a table, or use an invite link to join one.</p>
+          <div class="error-panel" id="error-panel" role="alert" hidden><span id="error-message"></span><button class="text-button" id="dismiss-error" aria-label="Dismiss error">×</button></div>
+        </section>
+      </div>
+    </main>
+    <footer class="site-footer"><span>Made for a little connection.</span><span>2 PEOPLE <span aria-hidden="true">·</span> 10 CARDS <span aria-hidden="true">·</span> 1 CHOICE</span></footer>
+  </div>
+  <div class="toast" id="toast" role="status" hidden>Invite link copied.</div>
+  <noscript><p class="noscript">Please enable JavaScript to use Ten Cards.</p></noscript>
+<script>
+(() => {
+'use strict';
+/** Pure game rules. This module has no knowledge of the page or network. */
+const SUITS = Object.freeze({
+  S: { symbol: '♠', color: 'black', name: 'spades' },
+  H: { symbol: '♥', color: 'red', name: 'hearts' },
+  D: { symbol: '♦', color: 'red', name: 'diamonds' },
+  C: { symbol: '♣', color: 'black', name: 'clubs' },
+});
+const RANKS = Object.freeze(['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']);
+const RANK_NAMES = Object.freeze({
+  A: 'Ace', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 6: 'Six',
+  7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', J: 'Jack', Q: 'Queen', K: 'King',
+});
+const CARD_IDS = new Set(Object.keys(SUITS).flatMap(suit => RANKS.map(rank => rank + suit)));
+const UINT32_RANGE = 0x100000000;
+
+function createDeck() {
+  return [...CARD_IDS];
+}
+
+function describeCard(id) {
+  if (!CARD_IDS.has(id)) throw new RangeError('Unknown card ID.');
+  const rank = id.slice(0, -1);
+  const suit = id.slice(-1);
+  const details = SUITS[suit];
+  return { id, rank, suit, symbol: details.symbol, color: details.color,
+    name: `${RANK_NAMES[rank]} of ${details.name}` };
+}
+
+function createGame() {
+  return { round: 0, revision: 0, cards: [], selectedCard: null };
+}
+
+function secureRandom() {
+  return globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / UINT32_RANGE;
+}
+
+function randomIndex(size, random) {
+  if (random === secureRandom) {
+    // Rejection sampling keeps every index equally likely, without modulo bias.
+    const limit = UINT32_RANGE - (UINT32_RANGE % size);
+    const bytes = new Uint32Array(1);
+    let value;
+    do { value = globalThis.crypto.getRandomValues(bytes)[0]; } while (value >= limit);
+    return value % size;
+  }
+  const value = random();
+  if (!Number.isFinite(value) || value < 0 || value >= 1) {
+    throw new RangeError('Random source must return a number from 0 (inclusive) to 1 (exclusive).');
+  }
+  return Math.floor(value * size);
+}
+
+function dealCards(state, random = secureRandom) {
+  if (!isValidState(state)) throw new TypeError('Cannot deal from an invalid game state.');
+  if (typeof random !== 'function') throw new TypeError('Random source must be a function.');
+  const deck = createDeck();
+  // Fisher–Yates: shuffle a fresh full deck before each ten-card deal.
+  for (let i = deck.length - 1; i > 0; i -= 1) {
+    const j = randomIndex(i + 1, random);
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return {
+    round: state.round + 1,
+    revision: state.revision + 1,
+    cards: deck.slice(0, 10),
+    selectedCard: null,
+  };
+}
+
+function selectCard(state, action) {
+  if (!isValidState(state) || !action || typeof action !== 'object' || Array.isArray(action)
+    || action.round !== state.round || state.round === 0 || state.selectedCard !== null
+    || !state.cards.includes(action.cardId)) return state;
+  return { ...state, revision: state.revision + 1, selectedCard: action.cardId };
+}
+
+function isValidState(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || !Number.isSafeInteger(value.round) || value.round < 0
+    || !Number.isSafeInteger(value.revision) || value.revision < value.round
+    || !Array.isArray(value.cards)
+    || (value.selectedCard !== null && typeof value.selectedCard !== 'string')) return false;
+  if (value.round === 0) {
+    return value.revision === 0 && value.cards.length === 0 && value.selectedCard === null;
+  }
+  return value.cards.length === 10
+    && new Set(value.cards).size === 10
+    && value.cards.every(card => CARD_IDS.has(card))
+    && (value.selectedCard === null || value.cards.includes(value.selectedCard));
+}
+
+
+/**
+ * Two-player WebRTC transport. PeerJS is supplied by the caller, not imported.
+ * host() resolves to {hostId, secret}; join(invite) resolves after authentication.
+ * All callbacks receive copies. Only a host may deal; only a connected guest
+ * may select. close() is final: make a new session object for another game.
+ * The invitation is a bearer capability; it stays in memory for this tab.
+ */
+
+const VERSION = 1;
+const HOST_ID = /^ten-[a-f0-9]{32}$/;
+const SECRET = /^[a-f0-9]{32}$/;
+const noop = () => {};
+const copy = state => ({ ...state, cards: [...state.cards] });
+const packet = (type, fields = {}) => ({ v: VERSION, type, ...fields });
+const validPacket = value => value !== null && typeof value === 'object' &&
+  !Array.isArray(value) && value.v === VERSION && typeof value.type === 'string';
+
+function randomHex() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), byte =>
+    byte.toString(16).padStart(2, '0')).join('');
+}
+
+function isValidInvite(invite) {
+  return Boolean(invite && typeof invite === 'object' &&
+    typeof invite.hostId === 'string' && typeof invite.secret === 'string' &&
+    HOST_ID.test(invite.hostId) && SECRET.test(invite.secret));
+}
+
+function createSession({
+  Peer,
+  peerOptions = {},
+  onStatus = noop,
+  onState = noop,
+  onInvite = noop,
+  onGuest = noop,
+  onError = noop,
+  timing = {},
+  timers = {},
+} = {}) {
+  const clock = {
+    now: () => Date.now(), setTimeout, clearTimeout, setInterval, clearInterval,
+    ...timers,
+  };
+  const limits = {
+    startup: 20000, handshake: 8000, heartbeat: 3000,
+    suspect: 9000, dead: 15000, lossGrace: 2500, rejectGrace: 120,
+    ...timing,
+  };
+  let role = null;
+  let phase = 'idle';
+  let state = createGame();
+  let peer = null;
+  let connection = null;
+  let invitation = null;
+  let authenticated = false;
+  let closed = false;
+  let signalingReady = false;
+  let startup = null;
+  let startupTimer = null;
+  let heartbeatTimer = null;
+  let lossTimer = null;
+  let lastReceived = 0;
+  const pending = new Map();
+  const deferredClosures = new Map();
+
+  function status(next, message) {
+    phase = next;
+    onStatus({ phase: next, message });
+  }
+
+  function updateState(next) {
+    state = copy(next);
+    onState(copy(state));
+  }
+
+  function settle(error, value) {
+    if (!startup) return;
+    const promise = startup;
+    startup = null;
+    clock.clearTimeout(startupTimer);
+    startupTimer = null;
+    if (error) promise.reject(new Error(error));
+    else promise.resolve(value);
+  }
+
+  function safeClose(conn) {
+    try { conn.close(); } catch { /* Already closed. */ }
+  }
+
+  function cleanup() {
+    clock.clearTimeout(startupTimer);
+    clock.clearTimeout(lossTimer);
+    clock.clearInterval(heartbeatTimer);
+    startupTimer = lossTimer = heartbeatTimer = null;
+    for (const [conn, timer] of pending) {
+      clock.clearTimeout(timer);
+      safeClose(conn);
+    }
+    pending.clear();
+    for (const [conn, timer] of deferredClosures) {
+      clock.clearTimeout(timer);
+      safeClose(conn);
+    }
+    deferredClosures.clear();
+    if (peer) {
+      try { peer.destroy(); } catch { /* Best-effort transport cleanup. */ }
+    }
+  }
+
+  function finish(message, error = false) {
+    if (closed) return;
+    closed = true;
+    authenticated = false;
+    settle(error ? message : 'The session ended before it connected.');
+    cleanup();
+    status('ended', message);
+    if (error) onError(message);
+  }
+
+  function send(conn, data) {
+    if (!conn?.open || closed) return false;
+    try { conn.send(data); return true; }
+    catch { return false; }
+  }
+
+  function clearPending(conn) {
+    if (!pending.has(conn)) return;
+    clock.clearTimeout(pending.get(conn));
+    pending.delete(conn);
+  }
+
+  function reject(conn, reason) {
+    clearPending(conn);
+    send(conn, packet('reject', { reason }));
+    const timer = clock.setTimeout(() => {
+      deferredClosures.delete(conn);
+      safeClose(conn);
+    }, limits.rejectGrace);
+    deferredClosures.set(conn, timer);
+  }
+
+  function connectedStatus() {
+    status('connected', signalingReady ?
+      (role === 'host' ? 'Guest connected. Your table is live.' : 'Connected to the host.') :
+      'Game connected. The invitation service is reconnecting.');
+  }
+
+  function hostLostGuest(conn) {
+    clearPending(conn);
+    if (closed || conn !== connection) return;
+    connection = null;
+    authenticated = false;
+    onGuest(false);
+    status('waiting', signalingReady ?
+      'Guest disconnected. Waiting for a guest.' :
+      'Guest disconnected. The invitation service is reconnecting.');
+  }
+
+  function guestLostHost() {
+    if (closed || lossTimer) return;
+    authenticated = false;
+    status('reconnecting', 'Host connection lost. This session is ending…');
+    lossTimer = clock.setTimeout(() => finish('Session ended. The host is no longer connected.'),
+      limits.lossGrace);
+  }
+
+  function touch() {
+    lastReceived = clock.now();
+    if (role === 'guest' && authenticated && phase === 'reconnecting' && !lossTimer) connectedStatus();
+  }
+
+  function startHeartbeat() {
+    heartbeatTimer = clock.setInterval(() => {
+      if (closed || !connection || !authenticated) return;
+      const elapsed = clock.now() - lastReceived;
+      if (elapsed >= limits.dead) {
+        if (role === 'host') {
+          const lost = connection;
+          hostLostGuest(lost);
+          safeClose(lost);
+        } else finish('Session ended. The host stopped responding.');
+        return;
+      }
+      if (role === 'guest' && elapsed >= limits.suspect && phase !== 'reconnecting') {
+        status('reconnecting', 'Waiting for the host. Card selection is paused.');
+      }
+      if (!send(connection, packet('ping'))) {
+        if (role === 'host') hostLostGuest(connection);
+        else guestLostHost();
+      }
+    }, limits.heartbeat);
+  }
+
+  function handleHostConnection(conn) {
+    if (closed || pending.size >= 4) {
+      safeClose(conn);
+      return;
+    }
+    pending.set(conn, clock.setTimeout(() => {
+      clearPending(conn);
+      safeClose(conn);
+    }, limits.handshake));
+    conn.on('data', data => {
+      if (closed || !validPacket(data)) return;
+      if (conn !== connection) {
+        if (!pending.has(conn) || data.type !== 'hello') return;
+        if (data.secret !== invitation.secret) { reject(conn, 'unauthorized'); return; }
+        if (connection) { reject(conn, 'room-full'); return; }
+        clearPending(conn);
+        connection = conn;
+        authenticated = true;
+        touch();
+        if (!send(conn, packet('welcome', { state: copy(state) }))) {
+          hostLostGuest(conn);
+          safeClose(conn);
+          return;
+        }
+        onGuest(true);
+        connectedStatus();
+        return;
+      }
+      touch();
+      if (data.type === 'ping') send(conn, packet('pong'));
+      if (data.type === 'leave') { hostLostGuest(conn); safeClose(conn); }
+      if (data.type === 'select') {
+        const next = selectCard(state, { round: data.round, cardId: data.cardId });
+        if (next !== state) {
+          updateState(next);
+          if (!send(conn, packet('state', { state: copy(state) }))) hostLostGuest(conn);
+        }
+      }
+    });
+    conn.on('close', () => hostLostGuest(conn));
+    conn.on('error', () => { hostLostGuest(conn); safeClose(conn); });
+  }
+
+  function handleGuestConnection(conn) {
+    connection = conn;
+    const greet = () => {
+      if (!send(conn, packet('hello', { secret: invitation.secret }))) {
+        finish('Could not contact the host. Ask for a new invite or try another network.', true);
+      }
+    };
+    conn.on('open', greet);
+    if (conn.open) queueMicrotask(greet);
+    conn.on('data', data => {
+      if (closed || conn !== connection || !validPacket(data)) return;
+      if (data.type === 'reject') {
+        const message = data.reason === 'room-full' ?
+          'This table already has a guest. Ask the host to start another game.' :
+          'This invitation is invalid. Ask the host for the complete invite link.';
+        finish(message, true);
+        return;
+      }
+      if (data.type === 'welcome' && !authenticated && !lossTimer) {
+        if (!isValidState(data.state)) {
+          finish('The host sent an incompatible game. Refresh both pages and try again.', true);
+          return;
+        }
+        authenticated = true;
+        touch();
+        updateState(data.state);
+        connectedStatus();
+        settle(null, copy(state));
+        return;
+      }
+      if (!authenticated) return;
+      touch();
+      if (data.type === 'state' && isValidState(data.state) && data.state.revision > state.revision) {
+        updateState(data.state);
+      }
+      if (data.type === 'ping') send(conn, packet('pong'));
+      if (data.type === 'end') finish('Session ended. The host closed the table.');
+    });
+    conn.on('close', () => {
+      if (!authenticated && startup && !closed) {
+        finish('The host could not accept this connection. Ask for a new invite.', true);
+      } else guestLostHost();
+    });
+    conn.on('error', () => {
+      if (startup && !closed) finish('Could not connect to the host. Try another network or a new invite.', true);
+      else guestLostHost();
+    });
+  }
+
+  function start(nextRole, invite) {
+    if (role || closed) return Promise.reject(new Error('Create a new session to start another game.'));
+    if (typeof Peer !== 'function') {
+      const message = 'The connection library could not load. Refresh the page and try again.';
+      status('ended', message);
+      onError(message);
+      closed = true;
+      return Promise.reject(new Error(message));
+    }
+    role = nextRole;
+    invitation = invite;
+    status('connecting', role === 'host' ? 'Creating your table…' : 'Connecting to the host…');
+    const ready = new Promise((resolve, rejectPromise) => {
+      startup = { resolve, reject: rejectPromise };
+    });
+    startupTimer = clock.setTimeout(() => finish(
+      'Could not establish a connection. Check your internet connection, then try a new invite or another network.', true),
+    limits.startup);
+    try {
+      peer = new Peer(role === 'host' ? invitation.hostId : undefined, { debug: 0, ...peerOptions });
+      peer.on('open', () => {
+        if (closed) return;
+        const firstOpen = !heartbeatTimer;
+        signalingReady = true;
+        if (firstOpen) startHeartbeat();
+        if (role === 'host') {
+          if (firstOpen) {
+            onInvite({ ...invitation });
+            onGuest(false);
+            status('waiting', 'Table created. Invite your guest.');
+            settle(null, { ...invitation });
+          } else if (connection && authenticated) connectedStatus();
+          else status('waiting', 'Waiting for your guest.');
+        } else if (firstOpen) {
+          handleGuestConnection(peer.connect(invitation.hostId, {
+            reliable: true, serialization: 'json', metadata: { app: 'card-table', v: VERSION },
+          }));
+        } else if (authenticated) connectedStatus();
+      });
+      peer.on('connection', conn => {
+        if (role === 'host') handleHostConnection(conn);
+        else safeClose(conn);
+      });
+      peer.on('disconnected', () => {
+        if (closed) return;
+        signalingReady = false;
+        if (authenticated) connectedStatus();
+        else if (role === 'host') status('waiting', 'The invitation service is reconnecting.');
+        try { if (!peer.destroyed && peer.disconnected) peer.reconnect(); }
+        catch { /* An existing data channel can continue without signaling. */ }
+      });
+      peer.on('error', error => {
+        if (closed) return;
+        if (authenticated && ['network', 'socket-error', 'socket-closed', 'server-error'].includes(error?.type)) {
+          signalingReady = false;
+          connectedStatus();
+          return;
+        }
+        const message = error?.type === 'peer-unavailable' ?
+          'This game is unavailable. The host may have closed or refreshed the page. Ask for a new invite.' :
+          error?.type === 'browser-incompatible' ?
+            'This browser does not support the connection. Try a current Chrome, Edge, Firefox, or Safari.' :
+            'The connection could not be established. Check your connection or try another network.';
+        finish(message, true);
+      });
+      peer.on('close', () => {
+        if (!closed) finish('Session ended. The connection was closed.');
+      });
+    } catch {
+      finish('The connection could not start. Check browser support and try again.', true);
+    }
+    return ready;
+  }
+
+  return {
+    host() {
+      return start('host', { hostId: `ten-${randomHex()}`, secret: randomHex() });
+    },
+    join(invite) {
+      if (!isValidInvite(invite)) {
+        const message = 'This invitation is incomplete or invalid. Ask the host for a new link.';
+        onError(message);
+        return Promise.reject(new Error(message));
+      }
+      return start('guest', { hostId: invite.hostId, secret: invite.secret });
+    },
+    deal() {
+      if (closed || role !== 'host' || !signalingReady && !authenticated) return false;
+      updateState(dealCards(state));
+      if (connection && !send(connection, packet('state', { state: copy(state) }))) hostLostGuest(connection);
+      return true;
+    },
+    select(cardId) {
+      if (closed || role !== 'guest' || !authenticated || phase !== 'connected' ||
+        state.selectedCard !== null || !state.cards.includes(cardId)) return false;
+      return send(connection, packet('select', { round: state.round, cardId }));
+    },
+    close() {
+      if (closed) return;
+      if (connection) send(connection, packet(role === 'host' ? 'end' : 'leave'));
+      finish(role === 'host' ? 'You ended this session.' : 'You left the game.');
+    },
+    get role() { return role; },
+    get state() { return copy(state); },
+  };
+}
+
+
+const HOST_PATTERN = /^ten-[a-f0-9]{32}$/;
+const SECRET_PATTERN = /^[a-f0-9]{32}$/;
+
+function validInvite(value) {
+  return Boolean(value && typeof value === 'object'
+    && HOST_PATTERN.test(value.hostId) && SECRET_PATTERN.test(value.secret));
+}
+
+function makeInviteLink(invite, pageUrl) {
+  if (!validInvite(invite)) throw new Error('This invite is incomplete. Please create a new table.');
+  const url = new URL(pageUrl);
+  url.search = '';
+  url.hash = new URLSearchParams({ host: invite.hostId, key: invite.secret }).toString();
+  return url.href;
+}
+
+function parseInviteLink(text, baseUrl) {
+  if (typeof text !== 'string' || text.trim().length > 2048) throw new Error('Please paste a complete Ten Cards invite link.');
+  let url;
+  try { url = new URL(text.trim(), baseUrl); } catch { throw new Error('That does not look like an invite link.'); }
+  if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Please use an http or https invite link.');
+  const params = new URLSearchParams(url.hash.slice(1));
+  const invite = { hostId: params.get('host'), secret: params.get('key') };
+  if (!validInvite(invite)) throw new Error('The invite link is incomplete or invalid. Ask the host for a fresh link.');
+  return invite;
+}
+
+
+// Optional deployment settings. Never put permanent TURN credentials in public code.
+// A production TURN service should issue short-lived credentials through a backend.
+const peerOptions = {
+  secure: true,
+  config: {
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+  },
+};
+
+// Pinned for reproducibility. Copy the browser bundle into vendor/ to self-host it.
+const peerLibraryUrl = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js';
+
+
+
+const $ = (id) => document.getElementById(id);
+const localFile = location.protocol === 'file:';
+let mode = 'idle';
+let state = createGame();
+let phase = 'idle';
+let guestPresent = false;
+let inviteLink = '';
+let session = null;
+let busy = false;
+let pending = false;
+let pendingTimer;
+let toastTimer;
+let libraryPromise;
+let cardsRenderKey = '';
+let operation = 0;
+
+function showError(message) {
+  $('error-message').textContent = message;
+  $('error-panel').hidden = false;
+}
+function clearError() { $('error-panel').hidden = true; }
+function announce(message) { $('connection-message').textContent = message; }
+function toast(message) {
+  clearTimeout(toastTimer);
+  $('toast').textContent = message;
+  $('toast').hidden = false;
+  toastTimer = setTimeout(() => { $('toast').hidden = true; }, 3500);
+}
+
+// Load the only external library only when someone requests a networked table.
+// Local practice works without that download or any signaling service.
+function loadPeer() {
+  if (globalThis.Peer) return Promise.resolve(globalThis.Peer);
+  if (libraryPromise) return libraryPromise;
+  libraryPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    const timer = setTimeout(failed, 18000);
+    function failed() {
+      clearTimeout(timer);
+      script.remove();
+      libraryPromise = null;
+      reject(new Error('The connection library could not load. Check your internet connection or try another network. Local practice is still available.'));
+    }
+    script.src = peerLibraryUrl;
+    script.crossOrigin = 'anonymous';
+    script.onload = () => {
+      clearTimeout(timer);
+      if (globalThis.Peer) resolve(globalThis.Peer);
+      else failed();
+    };
+    script.onerror = failed;
+    document.head.append(script);
+  });
+  return libraryPromise;
+}
+
+function selectFromTable(cardId) {
+  if (mode === 'practice') {
+    state = selectCard(state, { round: state.round, cardId });
+    render();
+    return;
+  }
+  if (mode !== 'guest' || phase !== 'connected' || pending || state.selectedCard) return;
+  pending = true;
+  render();
+  if (!session.select(cardId)) {
+    pending = false;
+    render();
+    return;
+  }
+  announce('Sending your choice to the host…');
+  clearTimeout(pendingTimer);
+  pendingTimer = setTimeout(() => {
+    pending = false;
+    render();
+    if (!state.selectedCard && phase === 'connected') announce('No confirmation yet. You can try your choice again.');
+  }, 5000);
+}
+
+function renderCards() {
+  const canSelect = (mode === 'practice' || (mode === 'guest' && phase === 'connected'))
+    && !pending && !state.selectedCard;
+  const key = JSON.stringify([state.cards, state.selectedCard, canSelect]);
+  if (cardsRenderKey === key) return;
+  cardsRenderKey = key;
+  const grid = $('cards-grid');
+  const oldFocus = document.activeElement?.dataset.card;
+  grid.replaceChildren();
+  if (!state.cards.length) {
+    for (let i = 0; i < 10; i++) {
+      const back = document.createElement('div');
+      back.className = 'card-back';
+      back.setAttribute('aria-hidden', 'true');
+      grid.append(back);
+    }
+    return;
+  }
+  for (const id of state.cards) {
+    const card = describeCard(id);
+    const selected = state.selectedCard === id;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `playing-card ${card.color}${selected ? ' selected' : ''}`;
+    button.disabled = !canSelect;
+    button.dataset.card = id;
+    button.setAttribute('aria-label', `${card.name}${selected ? ', selected' : ''}`);
+    button.setAttribute('aria-pressed', String(selected));
+    for (const corner of ['top', 'bottom']) {
+      const label = document.createElement('span');
+      label.className = `card-corner ${corner}`;
+      label.setAttribute('aria-hidden', 'true');
+      const rank = document.createElement('span'); rank.textContent = card.rank;
+      const suit = document.createElement('span'); suit.className = 'suit'; suit.textContent = card.symbol;
+      label.append(rank, suit);
+      button.append(label);
+    }
+    const pip = document.createElement('span');
+    pip.className = 'card-pip';
+    pip.setAttribute('aria-hidden', 'true');
+    pip.textContent = card.symbol;
+    button.append(pip);
+    if (selected) {
+      const check = document.createElement('span');
+      check.className = 'card-check'; check.textContent = '✓'; check.setAttribute('aria-hidden', 'true');
+      button.append(check);
+    }
+    button.addEventListener('click', () => selectFromTable(id));
+    grid.append(button);
+  }
+  if (oldFocus && canSelect) grid.querySelector(`[data-card="${oldFocus}"]`)?.focus({ preventScroll: true });
+}
+
+function render() {
+  const active = mode !== 'idle';
+  const practice = mode === 'practice';
+  const host = mode === 'host';
+  const ended = phase === 'ended';
+  $('setup-panel').hidden = active;
+  $('active-panel').hidden = !active;
+  $('create-button').disabled = busy || localFile;
+  $('join-button').disabled = busy || localFile;
+  $('practice-button').disabled = busy;
+  $('join-input').disabled = busy || localFile;
+  $('create-button').textContent = busy ? 'Connecting…' : '＋ Create a table';
+  $('role-label').textContent = practice ? 'LOCAL PRACTICE' : host ? 'YOU ARE THE HOST' : 'YOU ARE THE GUEST';
+  $('session-title').textContent = ended ? 'Until next time.' : practice ? 'Give it a little try.' : host ? 'A seat for a friend.' : 'You’re at the table.';
+  $('host-seat-label').textContent = practice ? 'You deal' : host ? 'You' : ended ? 'Disconnected' : 'Your friend';
+  $('guest-seat-label').textContent = practice ? 'You choose' : host ? (guestPresent ? 'Connected' : 'Waiting for a friend') : 'You';
+  $('host-dot').className = `seat-dot${!ended && active ? ' online' : ''}`;
+  $('guest-dot').className = `seat-dot${!ended && (practice || guestPresent || (mode === 'guest' && phase === 'connected')) ? ' online' : ''}`;
+  $('host-dot').setAttribute('aria-label', ended ? 'Not connected' : 'Present');
+  $('guest-dot').setAttribute('aria-label', $('guest-dot').classList.contains('online') ? 'Present' : 'Not connected');
+  $('invite-section').hidden = !host || !inviteLink || ended;
+  $('invite-output').value = inviteLink;
+  $('deal-button').hidden = !(host || practice);
+  $('deal-button').disabled = ended || !['waiting', 'connected'].includes(phase);
+  $('deal-button').textContent = state.round ? 'Deal again ↻' : 'Deal ten cards ↻';
+  $('leave-button').textContent = ended ? 'Back to start' : practice ? 'Exit practice' : host ? 'End game' : 'Leave table';
+  $('session-guidance').textContent = ended ? 'This session has ended. Start a fresh table to play again.' : practice
+    ? 'You can deal and choose here. Create a real table when you’re ready to invite someone.'
+    : host ? 'Keep this page open. Closing or refreshing it ends the game.'
+      : 'Your host deals. Pick one card each round. Both screens will show your choice.';
+  $('round-label').textContent = state.round ? `DEAL ${String(state.round).padStart(2, '0')} · 10 CARDS` : 'YOUR SHARED TABLE';
+  $('status-pill').dataset.phase = phase;
+  const labels = { idle: 'Not connected', connecting: 'Connecting…', waiting: 'Waiting for guest', connected: practice ? 'Local practice' : 'Connected · 2 of 2', reconnecting: 'Connection interrupted', ended: 'Session ended' };
+  $('status-label').textContent = labels[phase] || 'Not connected';
+  $('felt').classList.toggle('empty', !state.cards.length);
+  $('felt').classList.toggle('ended', ended);
+  $('table-empty').hidden = Boolean(state.cards.length);
+  $('empty-title').textContent = ended ? 'The table is closed.' : mode === 'guest' ? 'Take a little seat.' : active ? 'Your table is ready.' : 'Ready when you are.';
+  $('empty-copy').textContent = ended ? 'Start a new game for a fresh deal.' : mode === 'guest' ? 'The cards will appear when your host deals.' : active ? 'Deal ten cards to get things going.' : 'Create a table to deal your first ten cards.';
+  $('felt-label').textContent = practice ? 'PRACTICE · JUST ON THIS DEVICE' : 'TEN CARDS · ONE CHOICE';
+  $('table-instruction').textContent = ended ? 'This game has ended.' : pending ? 'Waiting for the host to confirm…' : state.selectedCard ? 'A choice has been made. Ready for another deal?' : state.cards.length
+    ? (host ? 'Your guest can choose one of these cards.' : 'Pick the card that catches your eye.')
+    : 'A full deck. A fresh deal. A shared moment.';
+  $('selection-copy').textContent = state.selectedCard
+    ? `Selected: ${describeCard(state.selectedCard).name}.`
+    : state.round ? (host ? 'Waiting for your guest’s choice.' : 'Which one will it be?') : 'Every good choice starts with a deal.';
+  $('selection-tag').hidden = !state.selectedCard;
+  renderCards();
+}
+
+function newSession(Peer, currentOperation) {
+  const current = () => operation === currentOperation;
+  return createSession({
+    Peer, peerOptions,
+    onStatus(status) {
+      if (!current()) return;
+      phase = status.phase;
+      if (phase !== 'connected') { pending = false; clearTimeout(pendingTimer); }
+      announce(status.message);
+      render();
+    },
+    onState(next) {
+      if (!current()) return;
+      state = next; pending = false; clearTimeout(pendingTimer);
+      if (next.selectedCard) announce('Choice recorded.');
+      render();
+    },
+    onInvite(invite) {
+      if (!current()) return;
+      inviteLink = makeInviteLink(invite, location.href);
+      render();
+    },
+    onGuest(present) { if (current()) { guestPresent = present; render(); } },
+    onError(message) { if (current()) showError(typeof message === 'string' ? message : message.message); },
+  });
+}
+
+async function startNetwork(role, invite) {
+  if (busy || mode !== 'idle') return;
+  clearError();
+  busy = true;
+  phase = 'connecting';
+  announce('Preparing your browser connection…');
+  const currentOperation = ++operation;
+  render();
+  try {
+    if (!globalThis.RTCPeerConnection) throw new Error('This browser does not support WebRTC. Please use a current browser, or try local practice.');
+    const Peer = await loadPeer();
+    if (operation !== currentOperation) return;
+    mode = role;
+    session = newSession(Peer, currentOperation);
+    render();
+    if (role === 'host') await session.host();
+    else await session.join(invite);
+  } catch (error) {
+    if (operation !== currentOperation) return;
+    // Invalidate callbacks before closing so a failed start returns to a usable form.
+    operation++;
+    session?.close();
+    session = null;
+    mode = 'idle'; phase = 'idle';
+    inviteLink = ''; guestPresent = false; state = createGame();
+    showError(error.message || 'The connection failed. Please try again.');
+    announce('The table could not connect. You can retry or try local practice.');
+  } finally {
+    busy = false;
+    render();
+  }
+}
+
+function reset() {
+  operation++;
+  session?.close();
+  session = null;
+  mode = 'idle'; phase = 'idle'; state = createGame();
+  inviteLink = ''; guestPresent = false; pending = false; busy = false;
+  clearTimeout(pendingTimer);
+  clearError();
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  $('join-input').value = '';
+  announce('Create a table, or use an invite link to join one.');
+  render();
+}
+
+$('create-button').addEventListener('click', () => startNetwork('host'));
+$('join-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  try {
+    const invite = parseInviteLink($('join-input').value, location.href);
+    startNetwork('guest', invite);
+  } catch (error) { showError(error.message); }
+});
+$('practice-button').addEventListener('click', () => {
+  clearError();
+  mode = 'practice'; phase = 'connected';
+  state = dealCards(createGame());
+  announce('Local practice: you control both the deal and the choice. No one else is connected.');
+  render();
+});
+$('deal-button').addEventListener('click', () => {
+  if (mode === 'practice') { state = dealCards(state); render(); }
+  else if (mode === 'host') session?.deal();
+});
+$('leave-button').addEventListener('click', () => {
+  if (phase === 'ended' || mode === 'practice') reset();
+  else session?.close();
+});
+$('copy-button').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(inviteLink);
+    toast('Invite link copied. Send it to a friend.');
+  } catch {
+    $('invite-output').focus(); $('invite-output').select();
+    toast('Select and copy the invite link above.');
+  }
+});
+$('help-toggle').addEventListener('click', () => {
+  const expanded = $('help-toggle').getAttribute('aria-expanded') === 'true';
+  $('help-toggle').setAttribute('aria-expanded', String(!expanded));
+  $('how-to-play').hidden = expanded;
+});
+$('dismiss-error').addEventListener('click', clearError);
+window.addEventListener('pagehide', () => { session?.close(); });
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted && session) {
+    phase = 'ended';
+    announce('This session ended when you left the page. Start a fresh table to play again.');
+    render();
+  }
+});
+
+if (location.hash) {
+  try {
+    parseInviteLink(location.href);
+    $('join-input').value = location.href;
+    $('join-hint').textContent = 'Your invitation is ready. Click Join table.';
+    announce('You’ve been invited. Join the table when you’re ready.');
+  } catch (error) { showError(error.message); }
+}
+if (localFile) {
+  $('join-hint').textContent = 'Publish the website to enable invitations.';
+  $('join-input').disabled = true;
+  $('create-button').title = 'Run a local web server or publish with GitHub Pages to create a networked table.';
+  $('join-button').title = 'Run a local web server or publish with GitHub Pages to join a networked table.';
+  document.querySelector('.brand').href = location.href.split('#')[0];
+  announce('Local file preview. Choose “Try it on this device” to explore the cards. Publish to invite a friend.');
+}
+render();
+
+})();
+</script>
+</body>
+</html>
