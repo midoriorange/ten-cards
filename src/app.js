@@ -22,6 +22,7 @@ let operation = 0;
 function showError(message) {
   $('error-message').textContent = message;
   $('error-panel').hidden = false;
+  $('error-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 function clearError() { $('error-panel').hidden = true; }
 function announce(message) { $('connection-message').textContent = message; }
@@ -140,6 +141,7 @@ function render() {
   const practice = mode === 'practice';
   const host = mode === 'host';
   const ended = phase === 'ended';
+  const connecting = phase === 'connecting';
   $('setup-panel').hidden = active;
   $('active-panel').hidden = !active;
   $('create-button').disabled = busy || localFile;
@@ -151,9 +153,9 @@ function render() {
   $('session-title').textContent = ended ? 'Until next time.' : practice ? 'Give it a little try.' : host ? 'A seat for a friend.' : 'You’re at the table.';
   $('host-seat-label').textContent = practice ? 'You deal' : host ? 'You' : ended ? 'Disconnected' : 'Your friend';
   $('guest-seat-label').textContent = practice ? 'You choose' : host ? (guestPresent ? 'Connected' : 'Waiting for a friend') : 'You';
-  $('host-dot').className = `seat-dot${!ended && active ? ' online' : ''}`;
+  $('host-dot').className = `seat-dot${!ended && !connecting && active ? ' online' : ''}`;
   $('guest-dot').className = `seat-dot${!ended && (practice || guestPresent || (mode === 'guest' && phase === 'connected')) ? ' online' : ''}`;
-  $('host-dot').setAttribute('aria-label', ended ? 'Not connected' : 'Present');
+  $('host-dot').setAttribute('aria-label', $('host-dot').classList.contains('online') ? 'Present' : 'Not connected');
   $('guest-dot').setAttribute('aria-label', $('guest-dot').classList.contains('online') ? 'Present' : 'Not connected');
   $('invite-section').hidden = !host || !inviteLink || ended;
   $('invite-output').value = inviteLink;
@@ -161,7 +163,8 @@ function render() {
   $('deal-button').disabled = ended || !['waiting', 'connected'].includes(phase);
   $('deal-button').textContent = state.round ? 'Deal again ↻' : 'Deal ten cards ↻';
   $('leave-button').textContent = ended ? 'Back to start' : practice ? 'Exit practice' : host ? 'End game' : 'Leave table';
-  $('session-guidance').textContent = ended ? 'This session has ended. Start a fresh table to play again.' : practice
+  $('session-guidance').textContent = ended ? 'This session has ended. Start a fresh table to play again.' : connecting
+    ? (host ? 'Preparing your invite link. Keep this page open.' : 'Connecting to your host. Keep this page open.') : practice
     ? 'You can deal and choose here. Create a real table when you’re ready to invite someone.'
     : host ? 'Keep this page open. Closing or refreshing it ends the game.'
       : 'Your host deals. Pick one card each round. Both screens will show your choice.';
@@ -172,8 +175,10 @@ function render() {
   $('felt').classList.toggle('empty', !state.cards.length);
   $('felt').classList.toggle('ended', ended);
   $('table-empty').hidden = Boolean(state.cards.length);
-  $('empty-title').textContent = ended ? 'The table is closed.' : mode === 'guest' ? 'Take a little seat.' : active ? 'Your table is ready.' : 'Ready when you are.';
-  $('empty-copy').textContent = ended ? 'Start a new game for a fresh deal.' : mode === 'guest' ? 'The cards will appear when your host deals.' : active ? 'Deal ten cards to get things going.' : 'Create a table to deal your first ten cards.';
+  $('empty-title').textContent = ended ? 'The table is closed.' : connecting ? 'Connecting your table…' : mode === 'guest' ? 'Take a little seat.' : active ? 'Your table is ready.' : 'Ready when you are.';
+  $('empty-copy').textContent = ended ? 'Start a new game for a fresh deal.' : connecting
+    ? (host ? 'Setting up your invite link. Please wait.' : 'Waiting for your host to accept the connection.')
+    : mode === 'guest' ? 'The cards will appear when your host deals.' : active ? 'Deal ten cards to get things going.' : 'Create a table to deal your first ten cards.';
   $('felt-label').textContent = practice ? 'PRACTICE · JUST ON THIS DEVICE' : 'TEN CARDS · ONE CHOICE';
   $('table-instruction').textContent = ended ? 'This game has ended.' : pending ? 'Waiting for the host to confirm…' : state.selectedCard ? 'A choice has been made. Ready for another deal?' : state.cards.length
     ? (host ? 'Your guest can choose one of these cards.' : 'Pick the card that catches your eye.')
@@ -233,7 +238,7 @@ async function startNetwork(role, invite) {
     if (operation !== currentOperation) return;
     // Invalidate callbacks before closing so a failed start returns to a usable form.
     operation++;
-    session?.close();
+    try { session?.close(); } catch { /* A cleanup failure must not hide the original error. */ }
     session = null;
     mode = 'idle'; phase = 'idle';
     inviteLink = ''; guestPresent = false; state = createGame();
