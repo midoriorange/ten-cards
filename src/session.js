@@ -1,23 +1,39 @@
 /**
  * Two-player WebRTC transport. PeerJS is supplied by the caller, not imported.
  * host() resolves to {hostId, secret}; join(invite) resolves after authentication.
- * All callbacks receive copies. Players alternate dealer and chooser while
- * the original host keeps the official state and shuffles every deal.
+ * All callbacks receive deep copies. The original host owns the official state
+ * throughout the auction, kitty exchange, and play. act(action) submits a game
+ * action; its return value reports local acceptance / request transmission.
+ * Guest requests are acknowledged with a state callback even when rejected.
  * close() is final: make a new session object for another game.
  * The invitation is a bearer capability; it stays in memory for this tab.
  */
-import { createGame, dealCards, selectCard, isValidState, canDeal, canSelect } from './game.js';
+import { createGame, applyAction, isValidState } from './game.js';
 
-const VERSION = 2;
+const VERSION = 3;
 const HOST_ID = /^ten-[a-f0-9]{32}$/;
 const SECRET = /^[a-f0-9]{32}$/;
 const noop = () => {};
-const copy = state => ({ ...state, cards: [...state.cards] });
+const copy = state => structuredClone(state);
 const packet = (type, fields = {}) => ({ v: VERSION, type, ...fields });
 const packetShape = value => value !== null && typeof value === 'object' &&
   !Array.isArray(value) && typeof value.type === 'string';
 const validPacket = value => packetShape(value) && value.v === VERSION;
 const UPDATE_MESSAGE = 'These pages are running different game versions. Refresh both browsers, then create a new invite.';
+
+// Action payloads are small JSON records. Bound them before handing anything
+// remote to the game engine; never accept arbitrary objects or giant payloads.
+function normalizeAction(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) ||
+    typeof value.type !== 'string' || value.type.length < 1 || value.type.length > 40) return null;
+  try {
+    const json = JSON.stringify(value);
+    if (json.length > 4096) return null;
+    const action = JSON.parse(json);
+    return action && typeof action === 'object' && !Array.isArray(action) &&
+      typeof action.type === 'string' ? action : null;
+  } catch { return null; }
+}
 
 function randomHex() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)), byte =>
@@ -214,9 +230,9 @@ export function createSession({
       if (closed) return;
       if (conn !== connection && pending.has(conn) && packetShape(data) &&
         data.type === 'hello' && data.v !== VERSION) {
-        // Reply in v1 when requested so the original client receives a reject
-        // it understands, rather than waiting forever for an unknown protocol.
-        reject(conn, 'version-mismatch', data.v === 1 ? 1 : VERSION);
+        // Reply using either older supported envelope so those clients receive
+        // a reject they understand, rather than waiting for an unknown protocol.
+        reject(conn, 'version-mismatch', data.v === 1 || data.v === 2 ? data.v : VERSION);
         return;
       }
       if (!validPacket(data)) return;
@@ -240,17 +256,18 @@ export function createSession({
       touch();
       if (data.type === 'ping') send(conn, packet('pong'));
       if (data.type === 'leave') { hostLostGuest(conn); safeClose(conn); }
-      if (data.type === 'select') {
-        // Sender identity comes from the authenticated connection, never from
-        // a role supplied by the remote browser.
-        const next = selectCard(state, { round: data.round, cardId: data.cardId, role: 'guest' });
-        if (next !== state) {
-          updateState(next);
-          if (!send(conn, packet('state', { state: copy(state) }))) hostLostGuest(conn);
+      if (data.type === 'action') {
+        const action = normalizeAction(data.action);
+        if (authenticated && phase === 'connected' && conn.open &&
+          Number.isSafeInteger(data.revision) && data.revision === state.revision && action) {
+          // Permanent sender identity comes from this authenticated connection,
+          // never an action.role or outer role supplied by the remote browser.
+          let next = state;
+          try { next = applyAction(state, 'guest', action); } catch { /* Reject invalid requests. */ }
+          if (next !== state) updateState(next);
         }
-      }
-      if (data.type === 'deal' && data.round === state.round && canDeal(state, 'guest')) {
-        updateState(dealCards(state));
+        // An unchanged snapshot acknowledges invalid or stale requests too.
+        // The guest can clear its pending indicator and use current legal moves.
         if (!send(conn, packet('state', { state: copy(state) }))) hostLostGuest(conn);
       }
     });
@@ -298,7 +315,7 @@ export function createSession({
       }
       if (!authenticated) return;
       touch();
-      if (data.type === 'state' && isValidState(data.state) && data.state.revision > state.revision) {
+      if (data.type === 'state' && isValidState(data.state) && data.state.revision >= state.revision) {
         updateState(data.state);
       }
       if (data.type === 'ping') send(conn, packet('pong'));
@@ -401,23 +418,14 @@ export function createSession({
       }
       return start('guest', { hostId: invite.hostId, secret: invite.secret });
     },
-    deal() {
-      if (closed || !canDeal(state, role)) return false;
-      if (role === 'guest') {
-        if (!authenticated || phase !== 'connected') return false;
-        return send(connection, packet('deal', { round: state.round }));
-      }
-      if (role !== 'host' || !signalingReady && !authenticated) return false;
-      updateState(dealCards(state));
-      if (connection && !send(connection, packet('state', { state: copy(state) }))) hostLostGuest(connection);
-      return true;
-    },
-    select(cardId) {
-      if (closed || !authenticated || phase !== 'connected' || !connection?.open ||
-        !canSelect(state, role) || !state.cards.includes(cardId)) return false;
-      if (role === 'guest') return send(connection, packet('select', { round: state.round, cardId }));
+    act(value) {
+      if (closed || !authenticated || phase !== 'connected' || !connection?.open) return false;
+      const action = normalizeAction(value);
+      if (!action) return false;
+      if (role === 'guest') return send(connection, packet('action', { revision: state.revision, action }));
       if (role !== 'host') return false;
-      const next = selectCard(state, { round: state.round, cardId, role: 'host' });
+      let next = state;
+      try { next = applyAction(state, 'host', action); } catch { return false; }
       if (next === state) return false;
       updateState(next);
       if (!send(connection, packet('state', { state: copy(state) }))) hostLostGuest(connection);

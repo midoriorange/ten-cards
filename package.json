@@ -1,8 +1,8 @@
 {
   "name": "ten-cards",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "private": true,
-  "description": "A small, open-source, two-person WebRTC card table.",
+  "description": "A two-person WebRTC game of bidding, trump, and four-card packs.",
   "type": "module",
   "license": "MIT",
   "scripts": {

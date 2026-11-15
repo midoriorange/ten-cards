@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { createSession, isValidInvite } from '../src/session.js';
+import { createGame, getLegalActions, getActivePlayer } from '../src/game.js';
 
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -132,6 +133,67 @@ function fixture(t, options = {}) {
   return { ...network, make };
 }
 
+async function connectedPair(t, options = {}) {
+  const fixtureValue = fixture(t, options);
+  const host = fixtureValue.make(options.hostCallbacks);
+  const invite = await host.host();
+  const guest = fixtureValue.make(options.guestCallbacks);
+  await guest.join(invite);
+  return { ...fixtureValue, host, guest, invite };
+}
+
+async function submit(host, guest, role, action) {
+  const before = host.state.revision;
+  assert.equal((role === 'host' ? host : guest).act(action), true, `sent ${role} ${action.type}`);
+  await flush();
+  assert.equal(host.state.revision, before + 1, `accepted ${role} ${action.type}`);
+  assert.deepEqual(guest.state, host.state);
+}
+
+async function reachPlay(host, guest, bidder = 'guest') {
+  await submit(host, guest, 'host', { type: 'deal' });
+  assert.equal(host.state.phase, 'auction');
+  if (bidder === 'guest') {
+    await submit(host, guest, 'guest', { type: 'bid', number: 3, mode: 'high' });
+    await submit(host, guest, 'host', { type: 'pass' });
+    assert.equal(host.state.phase, 'kitty');
+  } else {
+    await submit(host, guest, 'guest', { type: 'pass' });
+    await submit(host, guest, 'host', { type: 'bid', number: 3, mode: 'high' });
+    assert.equal(host.state.phase, 'trump_before');
+    await submit(host, guest, 'host', { type: 'trump', suit: 'S' });
+    assert.equal(host.state.phase, 'kitty');
+  }
+  const four = [...host.state.hands[bidder], ...host.state.kitty].slice(0, 4);
+  await submit(host, guest, bidder, { type: 'discard', cards: four });
+  if (bidder === 'guest') {
+    assert.equal(host.state.phase, 'trump_after');
+    await submit(host, guest, 'guest', { type: 'trump', suit: 'S' });
+  }
+  assert.equal(host.state.phase, 'play');
+}
+
+function chooseAction(state, preferTable = false) {
+  const role = getActivePlayer(state);
+  const legal = getLegalActions(state, role);
+  if (legal.canDeal) return { role, action: { type: 'deal' } };
+  if (legal.canBid && state.auction.entries.length === 0) {
+    return { role, action: { type: 'bid', ...legal.bids[0] } };
+  }
+  if (legal.canPass) return { role, action: { type: 'pass' } };
+  if (legal.canBid) return { role, action: { type: 'bid', ...legal.bids[0] } };
+  if (legal.canCallTrump) return { role, action: { type: 'trump', suit: 'S' } };
+  if (legal.canDiscard) return { role, action: {
+    type: 'discard', cards: [...state.hands[role], ...state.kitty].slice(0, 4),
+  } };
+  if (preferTable && legal.tableStacks.length) return { role, action: { type: 'playTable', stackIndex: legal.tableStacks[0] } };
+  if (legal.handCards.length) return { role, action: { type: 'playHand', cardId: legal.handCards[0] } };
+  if (legal.tableStacks.length) return { role, action: { type: 'playTable', stackIndex: legal.tableStacks[0] } };
+  if (legal.canContinue) return { role, action: { type: 'continue' } };
+  if (legal.canNewMatch) return { role, action: { type: 'newMatch' } };
+  assert.fail(`No legal action for ${role} in ${state.phase}`);
+}
+
 test('browser timers retain the global receiver through startup, heartbeat and cleanup', async () => {
   const names = ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'];
   const originals = Object.fromEntries(names.map(name => [name, globalThis[name]]));
@@ -139,8 +201,7 @@ test('browser timers retain the global receiver through startup, heartbeat and c
   const { Peer } = fakeNetwork();
   const sessions = [];
   try {
-    // Browser timer methods reject an unrelated object as `this`. Node's native
-    // timers do not, so model that receiver check without needing a browser.
+    // Node timers accept arbitrary receivers; model the browser receiver check.
     for (const name of names) {
       globalThis[name] = function (...args) {
         assert.equal(this, globalThis, `${name} must be called on the global object`);
@@ -153,18 +214,13 @@ test('browser timers retain the global receiver through startup, heartbeat and c
     sessions.push(host, guest);
     const invite = await host.host();
     await guest.join(invite);
-    host.deal();
-    await flush();
-    guest.select(guest.state.cards[0]);
-    await flush();
-    assert.equal(guest.state.selectedCard, host.state.selectedCard);
-    // Allow an actual heartbeat tick to exercise the interval callback too.
+    await submit(host, guest, 'host', { type: 'deal' });
+    await submit(host, guest, 'guest', { type: 'bid', number: 3, mode: 'high' });
     await new Promise(resolve => Reflect.apply(originals.setTimeout, globalThis, [resolve, 5]));
     host.close();
     guest.close();
     for (const name of names) assert(calls[name] > 0, `${name} was exercised`);
   } finally {
-    // Restore globals even when the original bug prevents startup or cleanup.
     Object.assign(globalThis, originals);
     for (const session of sessions) {
       try { session.close(); } catch { /* Preserve the original assertion. */ }
@@ -172,18 +228,17 @@ test('browser timers retain the global receiver through startup, heartbeat and c
   }
 });
 
-test('host creates an unguessable invitation and accepts one authenticated guest', async t => {
-  const { make } = fixture(t);
+test('host creates an unguessable invitation and authenticates one guest', async t => {
   const hostStatuses = [];
   const guestStatuses = [];
   const presence = [];
-  const host = make({ onStatus: event => hostStatuses.push(event.phase), onGuest: value => presence.push(value) });
-  const invite = await host.host();
+  const { host, guest, invite } = await connectedPair(t, {
+    hostCallbacks: { onStatus: event => hostStatuses.push(event.phase), onGuest: value => presence.push(value) },
+    guestCallbacks: { onStatus: event => guestStatuses.push(event.phase) },
+  });
   assert.equal(isValidInvite(invite), true);
   assert.match(invite.hostId, /^ten-[a-f0-9]{32}$/);
   assert.match(invite.secret, /^[a-f0-9]{32}$/);
-  const guest = make({ onStatus: event => guestStatuses.push(event.phase) });
-  await guest.join(invite);
   assert.equal(host.role, 'host');
   assert.equal(guest.role, 'guest');
   assert.equal(hostStatuses.at(-1), 'connected');
@@ -192,158 +247,150 @@ test('host creates an unguessable invitation and accepts one authenticated guest
   assert.deepEqual(host.state, guest.state);
 });
 
-test('host can deal before the guest joins; late join receives the current state', async t => {
+test('all game actions wait for a connected authenticated opponent', async t => {
   const { make } = fixture(t);
   const host = make();
   const invite = await host.host();
-  assert.equal(host.deal(), true);
-  assert.equal(host.state.cards.length, 10);
+  assert.equal(host.act({ type: 'deal' }), false);
+  assert.equal(host.state.revision, 0);
   const guest = make();
   await guest.join(invite);
-  assert.deepEqual(guest.state, host.state);
-  assert.equal(guest.deal(), false);
-});
-
-test('guest selection is host-validated, replicated, and reset by the guest’s next deal', async t => {
-  const { make } = fixture(t);
-  const host = make();
-  const invite = await host.host();
-  const guest = make();
-  await guest.join(invite);
-  host.deal();
-  await flush();
-  const chosen = guest.state.cards[3];
-  assert.equal(guest.select(chosen), true);
-  await flush();
-  assert.equal(host.state.selectedCard, chosen);
-  assert.equal(guest.state.selectedCard, chosen);
-  assert.equal(guest.select(guest.state.cards[5]), false);
-  assert.equal(host.select(chosen), false);
-  assert.equal(host.deal(), false);
-  assert.equal(guest.deal(), true);
-  await flush();
-  assert.equal(guest.state.selectedCard, null);
-  assert.equal(guest.state.round, 2);
-  assert.equal(guest.state.dealer, 'guest');
-  assert.deepEqual(guest.state, host.state);
-});
-
-test('players alternate dealer and chooser over a full multi-round cycle', async t => {
-  const { make } = fixture(t);
-  const host = make();
-  const invite = await host.host();
-  const guest = make();
-  await guest.join(invite);
-  assert.equal(guest.deal(), false);
-  assert.equal(host.deal(), true);
-  await flush();
-  assert.equal(host.state.dealer, 'host');
-  assert.equal(host.select(host.state.cards[0]), false);
-  assert.equal(guest.select(guest.state.cards[0]), true);
-  await flush();
-  assert.equal(host.deal(), false);
-  assert.equal(guest.deal(), true);
-  await flush();
-  assert.equal(host.state.round, 2);
-  assert.equal(host.state.dealer, 'guest');
-  assert.equal(guest.select(guest.state.cards[0]), false);
-  const hostChoice = host.state.cards[4];
-  assert.equal(host.select(hostChoice), true);
-  await flush();
-  assert.equal(guest.state.selectedCard, hostChoice);
-  assert.deepEqual(guest.state, host.state);
-  assert.equal(guest.deal(), false);
-  assert.equal(host.deal(), true);
-  await flush();
-  assert.equal(host.state.round, 3);
-  assert.equal(host.state.dealer, 'host');
-  assert.equal(guest.select(guest.state.cards[2]), true);
-  await flush();
-  assert.deepEqual(guest.state, host.state);
-});
-
-test('each current dealer may re-deal before the chooser selects', async t => {
-  const { make } = fixture(t);
-  const host = make();
-  const invite = await host.host();
-  const guest = make();
-  await guest.join(invite);
-  host.deal();
-  await flush();
-  assert.equal(host.deal(), true);
-  await flush();
-  assert.equal(host.state.dealer, 'host');
-  guest.select(guest.state.cards[0]);
-  await flush();
-  guest.deal();
-  await flush();
-  assert.equal(guest.deal(), true);
-  await flush();
-  assert.equal(host.state.round, 4);
-  assert.equal(host.state.dealer, 'guest');
-  assert.deepEqual(host.state, guest.state);
-});
-
-test('guest deal requests reject the wrong turn and stale duplicate rounds', async t => {
-  const { make, peers } = fixture(t);
-  const host = make();
-  const invite = await host.host();
-  const guest = make();
-  await guest.join(invite);
-  const hostConnection = peers.get(invite.hostId).connections[0];
-  hostConnection.emit('data', { v: 2, type: 'deal', round: 0, role: 'host' });
-  assert.equal(host.state.round, 0);
-  host.deal();
-  await flush();
+  await submit(host, guest, 'host', { type: 'deal' });
   const before = host.state;
-  hostConnection.emit('data', { v: 2, type: 'deal', round: before.round });
-  assert.deepEqual(host.state, before);
-  guest.select(guest.state.cards[0]);
-  await flush();
-  const completedRound = host.state.round;
-  hostConnection.emit('data', { v: 2, type: 'deal', round: completedRound - 1 });
-  assert.equal(host.state.round, completedRound);
-  hostConnection.emit('data', { v: 2, type: 'deal', round: completedRound });
-  assert.equal(host.state.round, completedRound + 1);
-  const guestDeal = host.state;
-  hostConnection.emit('data', { v: 2, type: 'deal', round: completedRound });
-  hostConnection.emit('data', { v: 2, type: 'select', round: guestDeal.round,
-    cardId: guestDeal.cards[0], role: 'host' });
-  assert.deepEqual(host.state, guestDeal);
-  await flush();
-  assert.deepEqual(host.state, guest.state);
-});
-
-test('out-of-deal and stale-round selections cannot alter host state', async t => {
-  const { make, peers } = fixture(t);
-  const host = make();
-  const invite = await host.host();
-  const guest = make();
-  await guest.join(invite);
-  host.deal();
-  await flush();
-  const hostPeer = peers.get(invite.hostId);
-  const hostConnection = hostPeer.connections[0];
-  const before = host.state;
-  hostConnection.emit('data', { v: 2, type: 'select', round: 0, cardId: before.cards[0] });
-  hostConnection.emit('data', { v: 2, type: 'select', round: 1, cardId: 'not-a-card' });
-  hostConnection.emit('data', { v: 2, type: 'state', state: { ...before, selectedCard: before.cards[0] } });
+  guest.close();
+  assert.equal(host.act({ type: 'pass' }), false);
+  assert.equal(guest.act({ type: 'bid', number: 3, mode: 'high' }), false);
   assert.deepEqual(host.state, before);
 });
 
-test('a second authenticated guest receives a clear full-table rejection', async t => {
-  const { make } = fixture(t);
-  const host = make();
-  const invite = await host.host();
-  const first = make();
-  await first.join(invite);
+test('auction, kitty, trump, action-hand and table plays remain synchronized', async t => {
+  const { host, guest } = await connectedPair(t);
+  await reachPlay(host, guest);
+  const seen = new Set([host.state.phase]);
+  let handPlays = 0;
+  let tablePlays = 0;
+  for (let i = 0; i < 200 && !['game_over', 'match_over'].includes(host.state.phase); i++) {
+    const { role, action } = chooseAction(host.state, i % 2 === 0);
+    if (action.type === 'playHand') handPlays++;
+    if (action.type === 'playTable') tablePlays++;
+    await submit(host, guest, role, action);
+    seen.add(host.state.phase);
+  }
+  assert(handPlays > 0);
+  assert(tablePlays > 0);
+  assert(seen.has('pack_complete'));
+  assert(['game_over', 'match_over'].includes(host.state.phase));
+});
+
+test('dealer winning the auction calls trump before the kitty exchange', async t => {
+  const { host, guest } = await connectedPair(t);
+  await reachPlay(host, guest, 'host');
+  assert.deepEqual(host.state, guest.state);
+});
+
+test('authenticated guest cannot forge host actions or replace official state', async t => {
+  const guestSnapshots = [];
+  const { host, guest, peers, invite } = await connectedPair(t, {
+    guestCallbacks: { onState: state => guestSnapshots.push(state) },
+  });
+  const conn = peers.get(invite.hostId).connections[0];
+  const before = host.state;
+  conn.emit('data', { v: 3, type: 'action', revision: 0, role: 'host', action: { type: 'deal', role: 'host' } });
+  conn.emit('data', { v: 3, type: 'state', state: { ...before, revision: 100 } });
+  await flush();
+  assert.deepEqual(host.state, before);
+  assert.deepEqual(guest.state, before);
+  assert(guestSnapshots.length > 1, 'invalid action acknowledged with an unchanged snapshot');
+  await submit(host, guest, 'host', { type: 'deal' });
+  const auction = host.state;
+  conn.emit('data', { v: 3, type: 'action', revision: auction.revision, role: 'host',
+    action: { type: 'bid', number: 3, mode: 'high', role: 'host' } });
+  await flush();
+  assert.equal(host.state.revision, auction.revision + 1);
+  assert.equal(host.state.auction.entries[0].role, 'guest');
+  assert.deepEqual(host.state, guest.state);
+});
+
+test('stale and duplicate guest actions acknowledge current state without applying twice', async t => {
+  const guestSnapshots = [];
+  const { host, guest, peers, invite } = await connectedPair(t, {
+    guestCallbacks: { onState: state => guestSnapshots.push(state) },
+  });
+  await submit(host, guest, 'host', { type: 'deal' });
+  const conn = peers.get(invite.hostId).connections[0];
+  const revision = host.state.revision;
+  const bid = { v: 3, type: 'action', revision, action: { type: 'bid', number: 3, mode: 'high' } };
+  conn.emit('data', bid);
+  conn.emit('data', bid);
+  conn.emit('data', { ...bid, revision: revision - 1 });
+  await flush();
+  assert.equal(host.state.revision, revision + 1);
+  assert.equal(host.state.auction.entries.length, 1);
+  assert.deepEqual(guest.state, host.state);
+  const before = guestSnapshots.length;
+  conn.emit('data', { ...bid, revision: host.state.revision, action: { type: 'not-a-move' } });
+  await flush();
+  assert.equal(guestSnapshots.length, before + 1, 'equal revision still calls onState to clear pending input');
+  assert.equal(host.state.revision, revision + 1);
+});
+
+test('malformed and oversized action requests cannot alter official state', async t => {
+  const { host, guest, peers, invite } = await connectedPair(t);
+  const conn = peers.get(invite.hostId).connections[0];
+  for (const value of [null, [], {}, { type: '' }, { type: 'x'.repeat(41) },
+    { type: 'deal', extra: 'x'.repeat(5000) }, { type: 'deal', value: 1n }]) {
+    assert.equal(guest.act(value), false);
+  }
+  const before = host.state;
+  conn.emit('data', { v: 3, type: 'action', revision: before.revision, action: { type: 'deal', extra: 'x'.repeat(5000) } });
+  conn.emit('data', { v: 3, type: 'action', revision: NaN, action: { type: 'deal' } });
+  conn.emit('data', { v: 3, type: 'action', revision: '0', action: { type: 'deal' } });
+  await flush();
+  assert.deepEqual(host.state, before);
+  assert.deepEqual(guest.state, before);
+});
+
+test('late replacement guest receives the complete current game', async t => {
+  const { host, guest, invite, make } = await connectedPair(t);
+  await reachPlay(host, guest);
+  const first = chooseAction(host.state);
+  await submit(host, guest, first.role, first.action);
+  const snapshot = host.state;
+  guest.close();
+  await flush();
+  const replacement = make();
+  await replacement.join(invite);
+  assert.deepEqual(replacement.state, snapshot);
+  assert.deepEqual(host.state, snapshot);
+});
+
+test('deep snapshots and callback arguments cannot mutate either player’s official state', async t => {
+  const { host, guest } = await connectedPair(t, {
+    hostCallbacks: { onState: state => {
+      if (state.hands?.host?.length) state.hands.host[0] = 'fake-host-callback';
+    } },
+    guestCallbacks: { onState: state => {
+      if (state.table?.guest?.[0]?.length) state.table.guest[0][0] = 'fake-guest-callback';
+    } },
+  });
+  await submit(host, guest, 'host', { type: 'deal' });
+  const snapshot = host.state;
+  snapshot.hands.host[0] = 'fake-getter';
+  snapshot.table.guest[0][0] = 'fake-nested';
+  snapshot.auction.entries.push({ type: 'pass', role: 'host' });
+  assert.notEqual(host.state.hands.host[0], 'fake-getter');
+  assert.notEqual(host.state.table.guest[0][0], 'fake-nested');
+  assert.equal(host.state.auction.entries.length, 0);
+  assert.deepEqual(host.state, guest.state);
+});
+
+test('second authenticated guest receives a full-table rejection', async t => {
+  const { host, guest, invite, make } = await connectedPair(t);
   const errors = [];
   const second = make({ onError: message => errors.push(message) });
   await assert.rejects(second.join(invite), /already has a guest/);
   assert.match(errors[0], /already has a guest/);
-  host.deal();
-  await flush();
-  assert.deepEqual(first.state, host.state);
+  await submit(host, guest, 'host', { type: 'deal' });
 });
 
 test('wrong invite secret does not occupy the seat', async t => {
@@ -358,145 +405,47 @@ test('wrong invite secret does not occupy the seat', async t => {
   assert.deepEqual(host.state, guest.state);
 });
 
-test('host close disables the guest and ends the session', async t => {
-  const { make } = fixture(t);
-  const statuses = [];
-  const host = make();
-  const invite = await host.host();
-  const guest = make({ onStatus: event => statuses.push(event.phase) });
-  await guest.join(invite);
-  host.deal();
-  await flush();
-  host.close();
-  assert.equal(guest.select(guest.state.cards[0]), false);
-  await delay(15);
-  assert.equal(statuses.at(-1), 'ended');
-  assert.equal(host.deal(), false);
-});
-
-test('guest departure frees the host seat for a new guest', async t => {
-  const { make } = fixture(t);
-  const host = make();
-  const invite = await host.host();
-  const guest = make();
-  await guest.join(invite);
-  guest.close();
-  await flush();
-  const replacement = make();
-  await replacement.join(invite);
-  host.deal();
-  await flush();
-  assert.deepEqual(replacement.state, host.state);
-});
-
-test('guest departure pauses a guest-dealt hand until a new guest connects', async t => {
-  const { make } = fixture(t);
-  const host = make();
-  const invite = await host.host();
-  const guest = make();
-  await guest.join(invite);
-  host.deal();
-  await flush();
-  guest.select(guest.state.cards[0]);
-  await flush();
-  guest.deal();
-  await flush();
-  const hand = host.state;
-  guest.close();
-  await flush();
-  assert.equal(host.select(hand.cards[0]), false);
-  assert.equal(host.deal(), false);
-  assert.deepEqual(host.state, hand);
-  const replacement = make();
-  await replacement.join(invite);
-  assert.deepEqual(replacement.state, hand);
-  assert.equal(host.select(hand.cards[0]), true);
-  await flush();
-  assert.equal(replacement.state.selectedCard, hand.cards[0]);
-});
-
-test('original host closing still ends the game during a guest-dealt round', async t => {
-  const { make } = fixture(t);
-  const statuses = [];
-  const host = make();
-  const invite = await host.host();
-  const guest = make({ onStatus: event => statuses.push(event.phase) });
-  await guest.join(invite);
-  host.deal();
-  await flush();
-  guest.select(guest.state.cards[0]);
-  await flush();
-  guest.deal();
-  await flush();
-  assert.equal(guest.state.dealer, 'guest');
-  host.close();
-  assert.equal(guest.deal(), false);
-  assert.equal(guest.select(guest.state.cards[0]), false);
-  await delay(15);
-  assert.equal(statuses.at(-1), 'ended');
-});
-
-test('signaling disconnect preserves the working data connection', async t => {
-  const { make, peers } = fixture(t);
-  const host = make();
-  const invite = await host.host();
-  const guest = make();
-  await guest.join(invite);
+test('signaling disconnect preserves the working game connection', async t => {
+  const { host, guest, peers, invite } = await connectedPair(t);
   const hostPeer = peers.get(invite.hostId);
   hostPeer.disconnected = true;
   hostPeer.emit('disconnected');
-  assert.equal(host.deal(), true);
-  await flush();
-  assert.deepEqual(guest.state, host.state);
+  await submit(host, guest, 'host', { type: 'deal' });
 });
 
 test('invalid invites fail before constructing a peer', async t => {
   const { make, peers } = fixture(t);
   const guest = make();
-  for (const invite of [null, {}, { hostId: '../../host', secret: 'a'.repeat(32) }, { hostId: 'ten-' + 'a'.repeat(32), secret: 'short' }]) {
+  for (const invite of [null, {}, { hostId: '../../host', secret: 'a'.repeat(32) },
+    { hostId: 'ten-' + 'a'.repeat(32), secret: 'short' }]) {
     await assert.rejects(guest.join(invite), /incomplete or invalid/);
   }
   assert.equal(peers.size, 0);
 });
 
-test('state snapshots cannot mutate the host state', async t => {
-  const { make } = fixture(t);
-  const host = make();
-  await host.host();
-  host.deal();
-  const snapshot = host.state;
-  snapshot.cards[0] = 'fake';
-  snapshot.round = 100;
-  assert.notEqual(host.state.cards[0], 'fake');
-  assert.equal(host.state.round, 1);
-});
-
-test('silent host pauses selection before timeout ends the session', async t => {
+test('silent host pauses actions before the timeout ends the session', async t => {
   const clock = manualClock();
-  const { make, peers } = fixture(t, { timing: { heartbeat: 10, suspect: 30, dead: 50 } });
   const statuses = [];
-  const host = make();
-  const invite = await host.host();
-  const guest = make({ timers: clock, onStatus: event => statuses.push(event.phase) });
-  await guest.join(invite);
-  host.deal();
-  await flush();
+  const { host, guest, peers, invite } = await connectedPair(t, {
+    timing: { heartbeat: 10, suspect: 30, dead: 50 },
+    guestCallbacks: { timers: clock, onStatus: event => statuses.push(event.phase) },
+  });
+  await submit(host, guest, 'host', { type: 'deal' });
   peers.get(invite.hostId).connections[0].muted = true;
   clock.tick(30);
   assert.equal(statuses.at(-1), 'reconnecting');
-  assert.equal(guest.select(guest.state.cards[0]), false);
+  assert.equal(guest.act({ type: 'bid', number: 3, mode: 'high' }), false);
   clock.tick(20);
   assert.equal(statuses.at(-1), 'ended');
 });
 
-test('heartbeat recovers a temporarily unresponsive host before ending', async t => {
+test('heartbeats recover a briefly unresponsive host before ending', async t => {
   const clock = manualClock();
-  const { make, peers } = fixture(t, { timing: { heartbeat: 10, suspect: 30, dead: 50 } });
   const statuses = [];
-  const host = make();
-  const invite = await host.host();
-  const guest = make({ timers: clock, onStatus: event => statuses.push(event.phase) });
-  await guest.join(invite);
+  const { peers, invite } = await connectedPair(t, {
+    timing: { heartbeat: 10, suspect: 30, dead: 50 },
+    guestCallbacks: { timers: clock, onStatus: event => statuses.push(event.phase) },
+  });
   const connection = peers.get(invite.hostId).connections[0];
   connection.muted = true;
   clock.tick(30);
@@ -506,36 +455,36 @@ test('heartbeat recovers a temporarily unresponsive host before ending', async t
   assert.equal(statuses.at(-1), 'connected');
 });
 
-test('guest ignores malformed or stale host snapshots', async t => {
-  const { make, peers } = fixture(t);
-  const host = make();
-  const invite = await host.host();
-  const guest = make();
-  await guest.join(invite);
-  host.deal();
-  await flush();
-  const current = guest.state;
+test('guest ignores malformed or stale host state snapshots', async t => {
+  const { host, guest, peers, invite } = await connectedPair(t);
+  await submit(host, guest, 'host', { type: 'deal' });
+  const before = guest.state;
   const incoming = peers.get(invite.hostId).connections[0].other;
-  incoming.emit('data', { v: 2, type: 'state', state: { ...current, revision: -1 } });
-  incoming.emit('data', { v: 2, type: 'state', state: { ...current, cards: Array(10).fill('AS'), revision: 10 } });
-  incoming.emit('data', { v: 2, type: 'state', state: { round: 0, revision: 0, cards: [], selectedCard: null } });
-  assert.deepEqual(guest.state, current);
+  incoming.emit('data', { v: 3, type: 'state', state: { ...before, revision: -1 } });
+  const malformed = structuredClone(before);
+  malformed.hands.host[0] = 'fake-card';
+  malformed.revision = 999;
+  incoming.emit('data', { v: 3, type: 'state', state: malformed });
+  incoming.emit('data', { v: 3, type: 'state', state: createGame() });
+  assert.deepEqual(guest.state, before);
 });
 
-test('v1 guest receives a compatible version-mismatch rejection without occupying the seat', async t => {
+test('v1 and v2 guests get compatible version rejection without occupying the seat', async t => {
   const { make, Peer } = fixture(t);
   const host = make();
   const invite = await host.host();
-  const oldGuest = new Peer();
-  t.after(() => oldGuest.destroy());
-  const rejected = new Promise(resolve => {
-    oldGuest.on('open', () => {
-      const conn = oldGuest.connect(invite.hostId);
-      conn.on('open', () => conn.send({ v: 1, type: 'hello', secret: invite.secret }));
-      conn.on('data', resolve);
+  for (const version of [1, 2]) {
+    const oldGuest = new Peer();
+    t.after(() => oldGuest.destroy());
+    const rejected = new Promise(resolve => {
+      oldGuest.on('open', () => {
+        const conn = oldGuest.connect(invite.hostId);
+        conn.on('open', () => conn.send({ v: version, type: 'hello', secret: invite.secret }));
+        conn.on('data', resolve);
+      });
     });
-  });
-  assert.deepEqual(await rejected, { v: 1, type: 'reject', reason: 'version-mismatch' });
+    assert.deepEqual(await rejected, { v: version, type: 'reject', reason: 'version-mismatch' });
+  }
   const guest = make();
   await guest.join(invite);
   assert.deepEqual(guest.state, host.state);
@@ -546,15 +495,11 @@ test('new guest explains incompatible host versions during the handshake', async
   const invite = { hostId: 'ten-' + 'a'.repeat(32), secret: 'b'.repeat(32) };
   const oldHost = new Peer(invite.hostId);
   t.after(() => oldHost.destroy());
-  oldHost.on('connection', conn => {
-    conn.on('data', data => {
-      if (data.type === 'hello') conn.send({ v: 1, type: 'welcome' });
-    });
-  });
-  const errors = [];
-  const guest = make({ onError: message => errors.push(message) });
+  oldHost.on('connection', conn => conn.on('data', data => {
+    if (data.type === 'hello') conn.send({ v: 2, type: 'welcome' });
+  }));
+  const guest = make();
   await assert.rejects(guest.join(invite), /different game versions.*Refresh both browsers/);
-  assert.match(errors[0], /Refresh both browsers/);
 });
 
 test('silent old host startup timeout tells both players to update', async t => {
@@ -563,7 +508,6 @@ test('silent old host startup timeout tells both players to update', async t => 
   const invite = { hostId: 'ten-' + 'a'.repeat(32), secret: 'b'.repeat(32) };
   const oldHost = new Peer(invite.hostId);
   t.after(() => oldHost.destroy());
-  // A v1 host ignores v2 hello packets, so the new guest must time out clearly.
   oldHost.on('connection', conn => conn.on('data', () => {}));
   const guest = make({ timers: clock });
   const rejected = assert.rejects(guest.join(invite), /Refresh both browsers to update/);
@@ -571,3 +515,50 @@ test('silent old host startup timeout tells both players to update', async t => 
   clock.tick(20000);
   await rejected;
 });
+
+test('a complete match synchronizes all phases and newMatch keeps revisions monotonic', async t => {
+  const { host, guest } = await connectedPair(t);
+  const phases = new Set([host.state.phase]);
+  for (let i = 0; i < 2000 && host.state.phase !== 'match_over'; i++) {
+    const { role, action } = chooseAction(host.state, i % 2 === 0);
+    await submit(host, guest, role, action);
+    phases.add(host.state.phase);
+  }
+  assert.equal(host.state.phase, 'match_over');
+  for (const phase of ['auction', 'kitty', 'trump_after', 'play', 'pack_complete']) assert(phases.has(phase));
+  const before = host.state.revision;
+  await submit(host, guest, 'host', { type: 'newMatch' });
+  assert.equal(host.state.revision, before + 1);
+  const { revision, ...reset } = host.state;
+  const { revision: initialRevision, ...initial } = createGame();
+  assert.deepEqual(reset, initial);
+});
+
+test('original host closure ends sessions in every game phase', async t => {
+  for (const target of ['lobby', 'auction', 'trump_before', 'kitty', 'trump_after',
+    'play', 'pack_complete', 'game_over', 'match_over']) {
+    await t.test(target, async subtest => {
+      const statuses = [];
+      const { host, guest } = await connectedPair(subtest, {
+        guestCallbacks: { onStatus: event => statuses.push(event.phase) },
+      });
+      if (target === 'trump_before') {
+        await submit(host, guest, 'host', { type: 'deal' });
+        await submit(host, guest, 'guest', { type: 'pass' });
+        await submit(host, guest, 'host', { type: 'bid', number: 3, mode: 'high' });
+      } else {
+        for (let i = 0; i < 2000 && host.state.phase !== target; i++) {
+          const { role, action } = chooseAction(host.state, i % 2 === 0);
+          await submit(host, guest, role, action);
+        }
+      }
+      assert.equal(host.state.phase, target);
+      host.close();
+      assert.equal(guest.act({ type: 'deal' }), false);
+      assert.equal(host.act({ type: 'deal' }), false);
+      await delay(15);
+      assert.equal(statuses.at(-1), 'ended');
+    });
+  }
+});
+

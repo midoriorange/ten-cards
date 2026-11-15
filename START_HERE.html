@@ -4,1078 +4,255 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#173f35">
-  <meta name="description" content="A little card table for two. Deal ten cards, invite a friend, and share a choice.">
+  <meta name="description" content="A private table for two: bid, exchange the kitty, and play twelve four-card packs. First to seven wins.">
   <meta name="referrer" content="no-referrer">
-  <title>Ten Cards — A table for two</title>
+  <title>Packs — A table for two</title>
   <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMxNzNmMzUiLz48cmVjdCB4PSIxNCIgeT0iMTAiIHdpZHRoPSIzNiIgaGVpZ2h0PSI0NCIgcng9IjQiIGZpbGw9IiNmZmZkZjQiLz48cGF0aCBkPSJNMzIgMTljLTQgNi0xMiA5LTEyIDE1YTcgNyAwIDAgMCAxMSA1bC0zIDhoOGwtMy04YTcgNyAwIDAgMCAxMS01YzAtNi04LTktMTItMTVaIiBmaWxsPSIjMjQ0ZjQwIi8+PC9zdmc+Cg==" type="image/svg+xml">
   <style>
-:root {
-  --paper:#f7f5ef;
-  --ink:#25382f;
-  --muted:#7a8076;
-  --line:#ddded3;
-  --green:#244f40;
-  --felt:#173f35;
-  --accent:#e7c87b;
-  --red:#b95043;
-  --sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  --serif:Georgia,"Times New Roman",serif;
-}
-* {
-  box-sizing:border-box;
-}
-body {
-  margin:0;
-  background:var(--paper);
-  color:var(--ink);
-  font-family:var(--sans);
-  font-size:14px;
-  line-height:1.6;
-}
-button,input {
-  font:inherit;
-}
-button,a,input {
-  -webkit-tap-highlight-color:transparent;
-}
-button {
-  cursor:pointer;
-}
-button:disabled {
-  cursor:default;
-  opacity:.5;
-}
-a {
-  color:inherit;
-}
-button:focus-visible,a:focus-visible,input:focus-visible {
-  outline:3px solid #ae8b38;
-  outline-offset:4px;
-}
-[hidden] {
-  display:none!important;
-}
-.app-shell {
-  max-width:1320px;
-  margin:0 auto;
-  padding:0 60px;
-}
-.site-header {
-  height:110px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  border-bottom:1px solid var(--line);
-}
-.brand {
-  display:flex;
-  align-items:center;
-  gap:16px;
-  text-decoration:none;
-  font:25px var(--serif);
-  letter-spacing:-.7px;
-}
-.brand-caption {
-  display:block;
-  margin-top:6px;
-  font:9px var(--sans);
-  letter-spacing:2.3px;
-  color:#737b70;
-}
-.brand-mark {
-  display:block;
-  position:relative;
-  width:42px;
-  height:44px;
-}
-.brand-mark span {
-  position:absolute;
-  width:28px;
-  height:36px;
-  display:grid;
-  place-items:center;
-  background:var(--paper);
-  border:1px solid #446052;
-  border-radius:4px;
-  font:22px var(--serif);
-  top:4px;
-  left:0;
-  transform:rotate(-14deg);
-}
-.brand-mark span+span {
-  color:var(--red);
-  left:15px;
-  top:7px;
-  transform:rotate(12deg);
-}
-.text-button {
-  border:0;
-  background:none;
-  padding:7px 0;
-  color:var(--ink);
-  font-size:12px;
-}
-.help-button {
-  display:flex;
-  gap:25px;
-}
-.help-button span {
-  font-size:16px;
-}
-.intro {
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-end;
-  padding:43px 0 35px;
-}
-.eyebrow {
-  font-size:9px;
-  font-weight:650;
-  letter-spacing:1.7px;
-  margin:0 0 12px;
-  color:var(--muted);
-}
-h1 {
-  font:50px/1.08 var(--serif);
-  letter-spacing:-1.7px;
-  margin:0;
-  font-weight:400;
-}
-h2 {
-  font:25px/1.25 var(--serif);
-  font-weight:400;
-  margin:0 0 14px;
-  letter-spacing:-.5px;
-}
-.intro-copy {
-  font-size:13px;
-  color:#747c70;
-  margin:0 0 3px;
-  line-height:1.8;
-}
-.game-layout {
-  display:grid;
-  grid-template-columns:273px minmax(0,1fr);
-  gap:34px;
-  align-items:start;
-}
-.sidebar {
-  display:grid;
-  gap:18px;
-}
-.session-panel {
-  padding:25px 23px 20px;
-  background:#fbfaf6;
-  border:1px solid var(--line);
-  border-radius:10px;
-}
-.session-panel h2 {
-  font-size:26px;
-}
-.muted {
-  font-size:12px;
-  color:var(--muted);
-  margin:0 0 22px;
-  line-height:1.8;
-}
-.button {
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  min-height:44px;
-  border:1px solid transparent;
-  border-radius:5px;
-  width:100%;
-  font-size:12px;
-  font-weight:550;
-  padding:10px 12px;
-  transition:background .15s,transform .15s;
-}
-.button:hover:not(:disabled) {
-  transform:translateY(-1px);
-}
-.primary {
-  background:var(--green);
-  color:#fff;
-}
-.primary:hover:not(:disabled) {
-  background:#183b2d;
-}
-.secondary {
-  background:transparent;
-  border-color:#cbd1c4;
-  color:var(--ink);
-}
-.secondary:hover:not(:disabled) {
-  background:#f0f1e9;
-}
-.divider {
-  position:relative;
-  text-align:center;
-  margin:23px 0;
-  color:#8c9085;
-  font-size:10px;
-}
-.divider:before {
-  content:"";
-  position:absolute;
-  top:50%;
-  left:0;
-  right:0;
-  height:1px;
-  background:#e4e4db;
-}
-.divider span {
-  position:relative;
-  background:#fbfaf6;
-  padding:0 10px;
-}
-label {
-  display:block;
-  font-size:10px;
-  font-weight:600;
-  margin-bottom:7px;
-}
-input {
-  display:block;
-  width:100%;
-  padding:11px 10px;
-  border:1px solid #daddd2;
-  background:#fffefb;
-  border-radius:5px;
-  min-height:42px;
-  font-size:11px;
-  color:#3c5141;
-  min-width:0;
-}
-input::placeholder {
-  color:#9a9c91;
-}
-#join-button,#copy-button {
-  margin-top:9px;
-}
-.input-hint {
-  font-size:10px;
-  color:#8a8f81;
-  margin:8px 0 0;
-}
-.practice-link {
-  font-size:10px;
-  background:none;
-  border:0;
-  border-top:1px solid #e5e5dc;
-  padding:18px 0 0;
-  margin-top:24px;
-  color:#6c7b68;
-  text-align:left;
-  line-height:1.8;
-}
-.practice-link:hover {
-  text-decoration:underline;
-}
-.note-card {
-  display:flex;
-  gap:13px;
-  padding:0 8px;
-}
-.note-suit {
-  font:27px var(--serif);
-  color:#6c8169;
-  line-height:1.5;
-}
-.note-card strong {
-  font-size:10px;
-  font-weight:550;
-}
-.note-card p {
-  font-size:10px;
-  line-height:1.8;
-  margin:4px 0;
-  color:#878d7f;
-}
-.table-toolbar {
-  height:34px;
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  font-size:9px;
-  letter-spacing:1.4px;
-  color:#777f71;
-}
-.status-pill {
-  display:flex;
-  align-items:center;
-  gap:6px;
-  border:1px solid #dbded2;
-  border-radius:20px;
-  padding:2px 9px;
-  font-size:9px;
-  letter-spacing:0;
-  margin-top:-3px;
-}
-.status-dot,.seat-dot {
-  height:5px;
-  width:5px;
-  display:inline-block;
-  background:#a7ac9f;
-  border-radius:50%;
-}
-.status-pill[data-phase="connected"] .status-dot,.status-pill[data-phase="waiting"] .status-dot,.online {
-  background:#55916d;
-}
-.status-pill[data-phase="connecting"] .status-dot,.status-pill[data-phase="reconnecting"] .status-dot {
-  background:#b2944a;
-  animation:pulse 1.5s infinite;
-}
-.status-pill[data-phase="ended"] .status-dot {
-  background:#b66b54;
-}
-.felt {
-  position:relative;
-  background:var(--felt);
-  border:1px solid #13352c;
-  border-radius:13px;
-  padding:24px 30px 18px;
-  min-height:400px;
-  overflow:hidden;
-  box-shadow:0 8px 20px #163c2d0c,inset 0 0 80px #0c2a211c;
-}
-.felt:before {
-  content:"";
-  pointer-events:none;
-  position:absolute;
-  inset:9px;
-  border:1px solid #7c9d762b;
-  border-radius:7px;
-}
-.felt-heading {
-  display:flex;
-  gap:18px;
-  align-items:center;
-  justify-content:center;
-  color:#98ad94;
-  font-size:8px;
-  letter-spacing:2px;
-  margin:3px 20px 26px;
-}
-.felt-rule {
-  height:1px;
-  background:#718f6d3d;
-  width:46px;
-}
-.cards-grid {
-  display:grid;
-  grid-template-columns:repeat(5,minmax(0,1fr));
-  gap:14px 15px;
-  position:relative;
-  z-index:1;
-}
-.playing-card,.card-back {
-  position:relative;
-  aspect-ratio:.7;
-  border-radius:6px;
-  min-width:0;
-  border:1px solid #edece3;
-  background:#fffdf4;
-  box-shadow:0 3px 5px #09261f38;
-}
-.playing-card {
-  padding:0;
-  color:#263c36;
-  text-align:left;
-  transition:transform .18s,box-shadow .18s,outline .18s;
-  opacity:1!important;
-  overflow:hidden;
-}
-.playing-card.red {
-  color:var(--red);
-}
-.playing-card:not(:disabled):hover {
-  transform:translateY(-5px);
-  box-shadow:0 7px 12px #061c1644;
-}
-.playing-card.selected {
-  outline:3px solid var(--accent);
-  outline-offset:3px;
-  transform:translateY(-4px);
-  box-shadow:0 0 0 6px #e7c87b16;
-}
-.playing-card:disabled {
-  color:#263c36;
-}
-.playing-card.red:disabled {
-  color:var(--red);
-}
-.card-corner {
-  position:absolute;
-  left:10%;
-  top:6%;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  font:clamp(13px,1.7vw,23px)/1.1 var(--serif);
-}
-.card-corner .suit {
-  font-size:.85em;
-  margin-top:1px;
-}
-.card-corner.bottom {
-  left:auto;
-  top:auto;
-  right:10%;
-  bottom:6%;
-  transform:rotate(180deg);
-}
-.card-pip {
-  position:absolute;
-  inset:0;
-  display:grid;
-  place-items:center;
-  font:clamp(23px,3.6vw,47px) var(--serif);
-}
-.card-check {
-  position:absolute;
-  right:5px;
-  top:5px;
-  width:16px;
-  height:16px;
-  border-radius:100%;
-  background:var(--accent);
-  color:#264132;
-  font:11px var(--sans);
-  display:grid;
-  place-items:center;
-}
-.card-back {
-  background:#214b3d;
-  border-color:#6b886650;
-  box-shadow:none;
-  opacity:.55;
-}
-.card-back:after {
-  content:"";
-  position:absolute;
-  inset:7px;
-  border:1px solid #7d9a702e;
-  border-radius:3px;
-  background:repeating-linear-gradient(45deg,transparent 0 6px,#8bab7913 6px 7px);
-}
-.card-back.dealt-back {
-  background:#285243;
-  border-color:#6d8e67;
-  opacity:1;
-  box-shadow:0 3px 5px #09261f38;
-}
-.dealt-back:after {
-  border-color:#afbe937a;
-  background:repeating-linear-gradient(45deg,transparent 0 6px,#c7d1a317 6px 7px);
-}
-.dealt-back:before {
-  content:"◇";
-  position:absolute;
-  inset:0;
-  display:grid;
-  place-items:center;
-  font:38px var(--serif);
-  color:#b9c599a6;
-}
-.felt.empty .cards-grid {
-  opacity:.37;
-}
-.table-empty {
-  position:absolute;
-  z-index:2;
-  inset:65px 20px 51px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  flex-direction:column;
-  text-align:center;
-  background:radial-gradient(ellipse at center,#173f35 0%,#173f35ee 38%,transparent 76%);
-  pointer-events:none;
-}
-.empty-suit {
-  font:37px var(--serif);
-  color:#a9bd94;
-  margin-bottom:12px;
-}
-.table-empty h2 {
-  font-size:29px;
-  color:#eef0da;
-  margin:0 0 10px;
-  letter-spacing:-.6px;
-}
-.table-empty p {
-  font-size:11px;
-  max-width:230px;
-  color:#a7b79d;
-  margin:0;
-  line-height:1.8;
-}
-.felt-footer {
-  margin-top:26px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  color:#9daf94;
-  font-size:9px;
-  gap:10px;
-}
-.felt-deck {
-  font:12px var(--serif);
-  border:1px solid #91aa772f;
-  border-radius:50%;
-  height:26px;
-  width:26px;
-  display:grid;
-  place-items:center;
-  flex-shrink:0;
-}
-.selection-panel {
-  min-height:82px;
-  border:1px solid var(--line);
-  border-radius:8px;
-  display:flex;
-  align-items:center;
-  gap:15px;
-  padding:16px 20px;
-  margin-top:17px;
-}
-.selection-icon {
-  font:30px var(--serif);
-  color:#809174;
-}
-.selection-panel .eyebrow {
-  font-size:8px;
-  margin:0 0 3px;
-}
-.selection-panel p {
-  font-size:12px;
-  margin:0;
-  color:#64725e;
-}
-.selection-tag {
-  font-size:8px;
-  color:#6c7e60;
-  letter-spacing:1px;
-  margin-left:auto;
-}
-.connection-message {
-  font-size:10px;
-  color:#808879;
-  margin:12px 3px 0;
-  min-height:17px;
-}
-.error-panel {
-  display:flex;
-  gap:12px;
-  align-items:center;
-  justify-content:space-between;
-  border:1px solid #d8b8a7;
-  background:#fff5ed;
-  border-radius:6px;
-  padding:10px 12px;
-  margin-top:12px;
-  color:#864b39;
-  font-size:12px;
-}
-.error-panel .text-button {
-  color:#864b39;
-  font-size:20px;
-}
-.site-footer {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-top:39px;
-  border-top:1px solid var(--line);
-  padding:21px 0 25px;
-  font-size:10px;
-  color:#94998b;
-}
-.site-footer>span+span {
-  font-size:8px;
-  letter-spacing:1px;
-}
-.site-footer>span+span span {
-  margin:0 6px;
-}
-.seats {
-  display:grid;
-  gap:13px;
-  margin:23px 0;
-}
-.seat {
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-size:12px;
-}
-.seat small {
-  display:block;
-  font-size:9px;
-  color:#89917f;
-  margin-top:1px;
-}
-.avatar {
-  display:grid;
-  place-items:center;
-  width:32px;
-  height:32px;
-  border-radius:100%;
-  background:#e7ebdf;
-  color:#45623b;
-  font:15px var(--serif);
-}
-.guest-avatar {
-  background:#eeeade;
-  color:#927f58;
-}
-.seat-dot {
-  margin-left:auto;
-  flex-shrink:0;
-}
-.session-guidance {
-  font-size:11px;
-  line-height:1.8;
-  color:#828b78;
-  margin:20px 0 16px;
-}
-.end-button {
-  display:block;
-  margin:14px auto 0;
-  color:#8c7563;
-  font-size:10px;
-}
-.help-panel {
-  padding:24px;
-  border:1px solid var(--line);
-  border-top:0;
-  border-radius:0 0 10px 10px;
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:24px;
-  background:#eeeee4;
-}
-.help-panel strong {
-  font-size:12px;
-  font-weight:550;
-}
-.help-panel p {
-  margin:6px 0 0;
-  font-size:11px;
-  color:#79836f;
-}
-.step-number {
-  color:#8b9877;
-  font:17px var(--serif);
-  margin-right:12px;
-}
-.help-panel .help-footnote {
-  grid-column:1/-1;
-  font-size:10px;
-  margin:0;
-}
-.toast {
-  position:fixed;
-  bottom:24px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#244f40;
-  color:#fff;
-  border-radius:6px;
-  box-shadow:0 5px 20px #0002;
-  padding:11px 20px;
-  font-size:12px;
-  z-index:10;
-}
-.noscript {
-  padding:20px;
-  text-align:center;
-  background:#fff0e5;
-}
-.felt.ended {
-  opacity:.72;
-}
-.felt.ended .playing-card {
-  filter:grayscale(.45);
-}
-@keyframes pulse {
-  50% {
-    opacity:.35;
-  }
-}
-@media(min-width:1280px) {
-  .felt {
-    padding:25px 38px 20px;
-  }
-  .cards-grid {
-    gap:17px 20px;
-  }
-}
-@media(max-width:1000px) {
-  .app-shell {
-    padding:0 30px;
-  }
-  .game-layout {
-    grid-template-columns:240px minmax(0,1fr);
-    gap:22px;
-  }
-  .session-panel {
-    padding:22px 18px;
-  }
-  .felt {
-    padding:22px 20px 16px;
-    min-height:360px;
-  }
-  .cards-grid {
-    gap:12px;
-  }
-  .felt-heading {
-    margin:3px 0 24px;
-    font-size:7px;
-    gap:10px;
-  }
-  .felt-footer {
-    font-size:8px;
-  }
-  .table-empty h2 {
-    font-size:25px;
-  }
-  .intro {
-    padding-top:32px;
-  }
-  h1 {
-    font-size:45px;
-  }
-  .card-corner {
-    font-size:17px;
-  }
-  .card-pip {
-    font-size:33px;
-  }
-}
-@media(max-width:760px) {
-  .app-shell {
-    max-width:620px;
-    padding:0 22px;
-  }
-  .site-header {
-    height:86px;
-  }
-  .brand {
-    font-size:23px;
-  }
-  .intro {
-    padding:30px 0 27px;
-    align-items:center;
-  }
-  .intro-copy {
-    font-size:11px;
-    max-width:130px;
-  }
-  h1 {
-    font-size:39px;
-  }
-  .game-layout {
-    grid-template-columns:1fr;
-    gap:25px;
-  }
-  .sidebar {
-    gap:0;
-  }
-  .session-panel {
-    padding:22px;
-  }
-  .session-panel h2 {
-    font-size:25px;
-  }
-  .note-card {
-    display:none;
-  }
-  .table-section {
-    grid-row:2;
-  }
-  .felt {
-    padding:22px 24px 16px;
-    min-height:0;
-  }
-  .card-corner {
-    font-size:clamp(14px,3.2vw,22px);
-  }
-  .card-pip {
-    font-size:clamp(25px,7vw,44px);
-  }
-  .cards-grid {
-    gap:14px;
-  }
-  .felt-heading {
-    margin-bottom:23px;
-    font-size:8px;
-  }
-  .felt-footer {
-    margin-top:23px;
-  }
-  #setup-panel {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    column-gap:20px;
-  }
-  #setup-panel>.eyebrow,#setup-panel>h2,#setup-panel>.muted {
-    grid-column:1/-1;
-  }
-  #setup-panel>.muted {
-    margin-bottom:16px;
-  }
-  #create-button {
-    height:44px;
-    margin-top:22px;
-  }
-  .divider {
-    display:none;
-  }
-  #join-form {
-    grid-column:2;
-    grid-row:4/7;
-  }
-  .practice-link {
-    grid-column:1;
-    margin-top:13px;
-    padding-top:10px;
-  }
-  .seats {
-    grid-template-columns:1fr 1fr;
-    margin:17px 0;
-  }
-  #invite-section {
-    display:grid;
-    grid-template-columns:1fr 150px;
-    column-gap:9px;
-  }
-  #invite-section label,#invite-section .input-hint {
-    grid-column:1/-1;
-  }
-  #copy-button {
-    margin:0;
-  }
-  .site-footer {
-    margin-top:27px;
-  }
-  .help-panel {
-    gap:15px;
-    padding:20px;
-  }
-  .help-panel strong {
-    display:block;
-  }
-  .help-panel .step-number {
-    display:block;
-    margin-bottom:5px;
-  }
-}
-@media(max-width:430px) {
-  .app-shell {
-    padding:0 16px;
-  }
-  .intro-copy {
-    display:none;
-  }
-  h1 {
-    font-size:40px;
-  }
-  .intro {
-    padding:27px 0;
-  }
-  .eyebrow {
-    font-size:8px;
-  }
-  .help-button {
-    font-size:11px;
-    gap:10px;
-  }
-  .game-layout {
-    gap:22px;
-  }
-  #setup-panel {
-    display:block;
-  }
-  #create-button {
-    margin-top:0;
-  }
-  .divider {
-    display:block;
-    margin:19px 0;
-  }
-  .practice-link {
-    margin-top:18px;
-    padding-top:13px;
-  }
-  .felt {
-    padding:20px 16px 14px;
-  }
-  .cards-grid {
-    gap:11px 9px;
-  }
-  .felt-heading {
-    font-size:7px;
-    letter-spacing:1.3px;
-    margin-bottom:19px;
-  }
-  .felt-rule {
-    width:25px;
-  }
-  .card-corner {
-    font-size:14px;
-  }
-  .card-pip {
-    font-size:30px;
-  }
-  .table-empty h2 {
-    font-size:25px;
-  }
-  .table-empty {
-    inset:48px 10px 42px;
-  }
-  .table-empty p {
-    font-size:10px;
-  }
-  .empty-suit {
-    font-size:28px;
-    margin-bottom:8px;
-  }
-  .felt-footer {
-    margin-top:20px;
-    font-size:8px;
-  }
-  .selection-panel {
-    padding:13px;
-    gap:10px;
-  }
-  .selection-panel p {
-    font-size:11px;
-  }
-  .selection-tag {
-    font-size:7px;
-  }
-  .site-footer>span:first-child {
-    max-width:120px;
-  }
-  .site-footer>span+span {
-    font-size:7px;
-    letter-spacing:.6px;
-  }
-  #invite-section {
-    grid-template-columns:1fr;
-  }
-  #copy-button {
-    margin-top:9px;
-  }
-  .help-panel {
-    grid-template-columns:1fr;
-  }
-  .help-panel strong {
-    display:inline;
-  }
-  .help-panel .step-number {
-    display:inline;
-  }
-  .help-panel p {
-    margin-left:31px;
-  }
-}
-@media(prefers-reduced-motion:reduce) {
-  *,*:before,*:after {
-    animation:none!important;
-    transition:none!important;
-  }
-}
+:root { --paper:#f7f5ef; --ink:#263d32; --muted:#7e8577; --line:#dedfd3; --green:#28533f; --felt:#173f35; --gold:#e8c879; --red:#b95043; --sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; --serif:Georgia,"Times New Roman",serif; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--paper); font:13px/1.65 var(--sans); }
+button,input,select { font:inherit; }
+button { cursor:pointer; }
+button:disabled { cursor:default; opacity:.48; }
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible { outline:3px solid #b18c36; outline-offset:4px; }
+[hidden] { display:none!important; }
+a { color:inherit; }
+.app-shell { max-width:1420px; margin:auto; padding:0 48px; }
+.site-header { height:94px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); }
+.brand { display:flex; align-items:center; gap:14px; font:29px var(--serif); text-decoration:none; }
+.brand small { display:block; margin-top:6px; font:8px var(--sans); letter-spacing:2.3px; color:var(--muted); }
+.brand-mark { display:grid; place-items:center; height:43px; width:33px; border:1px solid #657e5c; border-radius:5px; font-size:28px; transform:rotate(-9deg); }
+.text-button { border:0; background:none; color:var(--ink); padding:6px 0; font-size:11px; }
+h1,h2,h3,p { margin:0; }
+h1 { font:45px/1.12 var(--serif); letter-spacing:-1.4px; }
+h2 { font:25px/1.25 var(--serif); letter-spacing:-.4px; }
+h3 { font:21px/1.3 var(--serif); }
+.eyebrow { font-size:8px; font-weight:650; letter-spacing:1.8px; color:var(--muted); margin-bottom:10px; }
+.intro { display:flex; align-items:flex-end; justify-content:space-between; padding:31px 0 27px; }
+.intro>p { color:var(--muted); font-size:12px; line-height:1.9; }
+.workspace { display:grid; grid-template-columns:244px minmax(0,1fr); gap:27px; align-items:start; }
+.sidebar,.board-column { display:grid; gap:17px; min-width:0; }
+.panel,.phase-panel,.hand-panel { background:#fcfbf6; border:1px solid var(--line); border-radius:9px; padding:22px; }
+.panel h2 { margin-bottom:13px; }
+.muted { color:var(--muted); font-size:11px; line-height:1.8; }
+.button { min-height:42px; padding:9px 15px; border:1px solid transparent; border-radius:5px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:550; transition:background .15s; }
+.primary { background:var(--green); color:white; }
+.primary:hover:not(:disabled) { background:#183f2c; }
+.secondary { background:transparent; color:var(--ink); border-color:#cdd2c4; }
+.secondary:hover:not(:disabled) { background:#eeeee4; }
+.sidebar .button { width:100%; margin-top:10px; }
+#create-button { margin-top:20px; }
+label { display:block; margin-bottom:6px; font-size:10px; font-weight:550; }
+input,select { width:100%; min-width:0; min-height:40px; border:1px solid #d8ddcf; border-radius:4px; background:#fffefa; padding:9px 10px; font-size:11px; color:var(--ink); }
+input::placeholder { color:#929b88; }
+.divider { margin:19px 0; display:flex; align-items:center; gap:10px; font-size:10px; color:#929987; }
+.divider:before,.divider:after { content:""; flex:1; height:1px; background:var(--line); }
+.hint { font-size:10px; color:var(--muted); line-height:1.8; margin-top:8px; }
+.practice-link { background:none; border:0; border-top:1px solid var(--line); padding:16px 0 0; margin-top:21px; font-size:10px; color:#6e8262; text-align:left; }
+.practice-link:hover { text-decoration:underline; }
+.practice-controls { font-size:10px; color:var(--muted); line-height:1.8; }
+.leave { display:block; margin:16px auto 0; color:#977b67; font-size:10px; }
+.score-panel { padding-bottom:16px; }
+.score-row { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #e9e9df; padding:6px 0; font-size:12px; }
+.score-row strong { font:31px var(--serif); }
+.contract-panel h3 { margin-bottom:8px; }
+.target-line { display:flex; align-items:center; justify-content:space-between; font-size:10px; margin-top:15px; }
+.target-line strong { color:#9b7839; }
+progress { display:block; width:100%; height:6px; border:0; border-radius:10px; background:#e7e8dc; accent-color:#9b975c; margin-top:8px; }
+progress::-webkit-progress-bar { background:#e7e8dc; border-radius:10px; }
+progress::-webkit-progress-value { background:#9b975c; border-radius:10px; }
+.pack-counts { display:flex; justify-content:space-between; gap:8px; border-top:1px solid var(--line); padding-top:14px; margin-top:17px; font-size:9px; color:var(--muted); }
+.pack-counts b { color:var(--ink); margin-left:6px; }
+.connection-status { display:flex; align-items:center; gap:7px; font-size:10px; padding:0 5px; }
+.status-dot { width:6px; height:6px; border-radius:50%; background:#a6ae9a; }
+.status-dot[data-phase="connected"],.status-dot[data-phase="waiting"] { background:#62956b; }
+.status-dot[data-phase="connecting"],.status-dot[data-phase="reconnecting"] { background:#b99641; animation:statusPulse 1.4s infinite; }
+.status-dot[data-phase="ended"] { background:#b66b54; }
+.connection-message { font-size:10px; line-height:1.8; color:var(--muted); padding:0 5px; }
+.error-panel { display:flex; justify-content:space-between; align-items:center; gap:10px; border:1px solid #deb9a3; background:#fff4ea; border-radius:6px; padding:12px; font-size:11px; color:#94593e; }
+.error-panel button { font-size:20px; }
+.phase-panel { padding:21px 24px; border-left:3px solid #809168; }
+.phase-heading,.section-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.phase-heading .eyebrow { margin-bottom:6px; }
+.phase-panel>p { color:#7b8471; font-size:11px; line-height:1.85; margin-top:10px; }
+.phase-chip,.count-chip { flex-shrink:0; font-size:8px; letter-spacing:1px; color:#758269; border:1px solid #d9dfce; padding:4px 9px; border-radius:20px; }
+.action-row { display:flex; align-items:center; flex-wrap:wrap; gap:9px; margin-top:17px; }
+.action-row label { margin:0; font-size:10px; }
+.action-row select { width:135px; }
+.action-row>span { font-size:11px; color:var(--muted); }
+.auction-history { display:flex; gap:9px; flex-wrap:wrap; margin-top:12px; }
+.auction-history:empty { display:none; }
+.bid-token { font-size:9px; border-radius:4px; padding:4px 9px; background:#eeeede; color:#6c785d; }
+.trump-controls { display:flex; gap:9px; margin-top:17px; }
+.suit-button { width:75px; border:1px solid #d6dbc9; background:#fffef8; border-radius:5px; padding:6px; font:25px var(--serif); color:var(--ink); }
+.suit-button span { display:block; font:9px var(--sans); margin-top:4px; }
+.red { color:var(--red); }
+.result-panel { border-top:1px solid var(--line); margin-top:17px; padding-top:14px; }
+.result-panel strong { font:22px var(--serif); }
+.result-panel p { margin-top:5px; font-size:11px; color:var(--muted); }
+.felt { background:var(--felt); border-radius:12px; border:1px solid #10372d; padding:24px 28px; position:relative; overflow:hidden; box-shadow:0 7px 20px #173f350c; }
+.felt:before { content:""; position:absolute; inset:9px; border:1px solid #8da47a26; border-radius:7px; pointer-events:none; }
+.zone-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:8px; letter-spacing:1.2px; color:#a5b496; margin-bottom:12px; }
+.zone-heading>span+span { font-size:8px; letter-spacing:0; color:#93a985; }
+.opponent-hand { display:flex; justify-content:center; align-items:center; min-height:33px; margin:0 0 17px; gap:4px; }
+.opponent-hand .card-back { width:17px; height:25px; min-height:0; aspect-ratio:auto; border-radius:3px; }
+.opponent-hand .card-back:after { inset:3px; }
+.opponent-hand.revealed { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:7px; }
+.opponent-hand.revealed .playing-card { width:100%; }
+.stacks { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:28px; max-width:500px; margin:0 auto; }
+.stack { min-width:0; position:relative; text-align:center; }
+.stack-card { max-width:84px; margin:auto; }
+.stack-caption { display:block; font-size:8px; margin-top:7px; color:#a1b38f; letter-spacing:.5px; }
+.stack .playing-card,.stack .card-back,.stack .empty-card { width:100%; }
+.stack .card-back { box-shadow:3px 3px 0 #55794d55,6px 6px 0 #55794d22; }
+.revealed-stack { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; }
+.revealed-stack .playing-card { width:100%; }
+.pack-zone { padding:26px 0; margin:23px 0; border-top:1px solid #708d623d; border-bottom:1px solid #708d623d; }
+.pack-heading { display:flex; align-items:center; justify-content:center; gap:15px; color:#bfd0a5; font-size:8px; letter-spacing:1.7px; }
+.rule { display:block; height:1px; width:32px; background:#738e5d66; }
+.pack-zone>p { font-size:9px; text-align:center; color:#97ad87; margin:7px 0 17px; }
+.pack-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; max-width:430px; margin:auto; }
+.pack-slot { min-width:0; text-align:center; }
+.pack-slot small { display:block; font-size:8px; margin-top:8px; color:#9bb18b; }
+.playing-card,.card-back,.empty-card { display:block; position:relative; aspect-ratio:.71; min-width:0; border-radius:5px; border:1px solid #eeeade; background:#fffdf3; box-shadow:0 2px 5px #09261f35; }
+.playing-card { padding:0; text-align:left; color:#203b31; overflow:hidden; transition:transform .15s,outline .15s; opacity:1!important; }
+.playing-card.red { color:var(--red); }
+.playing-card:disabled { color:#203b31; cursor:default; }
+.playing-card.red:disabled { color:var(--red); }
+.playing-card:not(:disabled):hover { transform:translateY(-4px); }
+.playing-card.legal { outline:2px solid #c1caa5; outline-offset:2px; }
+.playing-card.selected { outline:3px solid var(--gold); outline-offset:2px; transform:translateY(-3px); }
+.playing-card .corner { position:absolute; left:9%; top:6%; display:flex; flex-direction:column; align-items:center; font:clamp(14px,1.7vw,22px)/1.08 var(--serif); }
+.playing-card .corner.bottom { top:auto; left:auto; right:9%; bottom:6%; transform:rotate(180deg); }
+.playing-card .corner .suit { font-size:.8em; margin-top:2px; }
+.playing-card .pip { position:absolute; inset:0; display:grid; place-items:center; font:clamp(27px,3vw,40px) var(--serif); }
+.playing-card.mini .corner { font-size:14px; }
+.playing-card.mini .pip { font-size:25px; }
+.card-back { background:#285343; border-color:#6e8b60; box-shadow:0 2px 5px #09261f35; }
+.card-back:after { content:""; position:absolute; inset:6px; border:1px solid #aabf8577; border-radius:2px; background:repeating-linear-gradient(45deg,transparent 0 5px,#becf9b1b 5px 6px); }
+.empty-card { background:#12382f; border:1px dashed #6f8f5e66; box-shadow:none; display:grid; place-items:center; color:#78966b; font-size:9px; }
+.hand-panel { padding:23px 24px; }
+.section-heading .eyebrow { margin-bottom:5px; }
+.section-heading h2 { font-size:24px; }
+.hand-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; margin-top:20px; }
+.kitty-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; max-width:460px; margin-top:15px; }
+.history-panel { border:1px solid var(--line); border-radius:7px; padding:14px 18px; background:#f1f1e7; }
+.history-panel summary { cursor:pointer; color:#6e7d61; font-size:11px; }
+.history-pack { display:flex; gap:14px; align-items:center; padding:12px 0; border-top:1px solid var(--line); margin-top:12px; }
+.history-pack .history-cards { display:flex; gap:5px; }
+.history-cards .playing-card { width:41px; }
+.history-cards .playing-card .corner { font-size:11px; }
+.history-cards .playing-card .pip { font-size:17px; }
+.history-pack p { font-size:10px; color:var(--muted); }
+.game-result { font-size:11px; padding:12px 0; border-top:1px solid var(--line); margin-top:10px; color:#748267; }
+.site-footer { margin-top:35px; padding:21px 0; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:20px; color:#8c9581; font-size:9px; }
+.site-footer>span+span { font-size:8px; letter-spacing:1px; }
+#build-label { display:block; font-size:9px; color:#6d7c60; margin-top:3px; }
+.help-panel { background:#eeeee2; padding:25px; border:1px solid var(--line); border-top:0; border-radius:0 0 8px 8px; }
+.help-panel h2 { font-size:24px; }
+.help-panel ol { padding-left:20px; display:grid; gap:9px; font-size:11px; color:#748168; }
+.help-panel>p { font-size:10px; color:#89927e; }
+.toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#2d543e; color:#fff; padding:11px 20px; border-radius:6px; box-shadow:0 4px 15px #0002; font-size:11px; z-index:20; max-width:90vw; }
+.celebration { position:fixed; inset:0; display:grid; place-items:center; pointer-events:none; background:#15372ed9; z-index:30; }
+.celebration span { color:#f0d78f; font:clamp(35px,7vw,90px)/1.2 var(--serif); letter-spacing:5px; text-align:center; animation:boloFlash .8s ease-in-out 5; padding:25px; }
+.noscript { padding:20px; text-align:center; background:#fff0e5; }
+@keyframes statusPulse { 50% { opacity:.35; } }
+@keyframes boloFlash { 50% { opacity:.3; transform:scale(.97); } }
+@media(max-width:1100px) { .app-shell{padding:0 28px}.workspace{grid-template-columns:220px minmax(0,1fr);gap:20px}.panel{padding:18px}.felt{padding:23px}.stacks{gap:22px}.hand-grid{gap:10px}.playing-card .corner{font-size:17px}.playing-card .pip{font-size:31px}.phase-panel,.hand-panel{padding:20px} }
+@media(max-width:800px) { .app-shell{max-width:700px;padding:0 20px}.site-header{height:80px}.intro{padding:26px 0}h1{font-size:39px}.workspace{grid-template-columns:1fr}.sidebar{grid-template-columns:1fr 1fr;gap:13px}#setup-panel,#active-panel{grid-column:1/-1}.score-panel,.contract-panel{padding:18px}.connection-message,.error-panel{grid-column:1/-1}.connection-status{grid-column:1/-1}.board-column{gap:16px}.felt{padding:24px}.stack-card{max-width:88px}.hand-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}.playing-card .corner{font-size:16px}.playing-card .pip{font-size:29px}.intro>p{font-size:10px}.site-footer{font-size:8px}.site-footer>span+span{font-size:7px} }
+@media(max-width:440px) { .app-shell{padding:0 14px}.intro>p{display:none}h1{font-size:38px}.sidebar{grid-template-columns:1fr 1fr;gap:10px}.panel{padding:17px}.contract-panel h3{font-size:19px}.pack-counts{flex-direction:column;gap:4px}.felt{padding:21px 17px}.stacks{gap:18px}.stack-card{max-width:72px}.pack-cards{gap:9px}.pack-zone{padding:22px 0}.pack-heading{font-size:7px;gap:9px}.rule{width:20px}.hand-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.hand-panel,.phase-panel{padding:18px}.phase-heading h2{font-size:23px}.phase-chip{font-size:7px;padding:3px 7px}.playing-card .corner{font-size:17px}.playing-card .pip{font-size:30px}.playing-card.mini .corner{font-size:13px}.playing-card.mini .pip{font-size:23px}.kitty-grid{gap:9px}.history-pack{align-items:flex-start;gap:10px}.history-cards .playing-card{width:33px}.history-cards .playing-card .corner{font-size:9px}.history-cards .playing-card .pip{font-size:13px}.site-footer>span:first-child{max-width:130px}.site-footer>span+span{max-width:125px;text-align:right}.suit-button{width:65px} }
+@media(prefers-reduced-motion:reduce) { *,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important} }
 
 </style>
+  <meta name="application-version" content="0.4.0">
 </head>
 <body>
   <div class="app-shell">
     <header class="site-header">
-      <a class="brand" href="./" aria-label="Ten Cards home">
-        <span class="brand-mark" aria-hidden="true"><span>♠</span><span>♥</span></span>
-        <span>Ten Cards<span class="brand-caption">A TABLE FOR TWO</span></span>
-      </a>
-      <button class="text-button help-button" id="help-toggle" aria-expanded="false" aria-controls="how-to-play">How to play <span aria-hidden="true">↗</span></button>
+      <a class="brand" href="./" aria-label="Packs home"><span class="brand-mark" aria-hidden="true">♠</span><span>Packs<small>A TABLE FOR TWO</small></span></a>
+      <button class="text-button" id="help-toggle" aria-expanded="false" aria-controls="how-to-play">How to play ↗</button>
     </header>
-
-    <section class="help-panel" id="how-to-play" hidden aria-label="How to play">
-      <div><span class="step-number">01</span><strong>Open a table</strong><p>One person hosts and shares an invite link.</p></div>
-      <div><span class="step-number">02</span><strong>Deal ten cards</strong><p>The chooser sees the faces. The dealer sees the backs.</p></div>
-      <div><span class="step-number">03</span><strong>Take turns</strong><p>Pick one card, then deal the next hand for your friend.</p></div>
-      <p class="help-footnote">Choosing reveals that one card to the dealer. The chooser then deals next. The game ends when the host leaves or refreshes.</p>
+    <section class="help-panel" id="how-to-play" hidden>
+      <h2>A little strategy. A shared table.</h2>
+      <ol>
+        <li>Each player gets a private hand of twelve cards and three face-down stacks of four. Four more cards make the kitty.</li>
+        <li>The non-dealer bids first. Each player gets one bid or pass; the dealer must bid after an opening pass. Equal numbers rank low above high.</li>
+        <li>The bid winner exchanges the kitty and calls trump. A dealer calls before seeing the kitty; a non-dealer calls after discarding four.</li>
+        <li>A pack has four plays: leader’s hand, follower’s hand, leader’s table, follower’s table. Follow the original suit whenever possible, separately within your hand or exposed table cards.</li>
+        <li>Trump beats other suits. High ranks A–K–Q…2; low ranks A–2–3…K. The strongest single qualifying card wins the pack and the next lead.</li>
+        <li>The defender needs 8 minus the bid, with a minimum of one pack. Otherwise play all twelve packs. BOLO and REVERSE BOLO score two games; other wins score one. First to seven or more wins.</li>
+      </ol>
+      <p>The original host keeps this page open. Hidden cards are concealed in the interface for this trusted-player prototype.</p>
     </section>
-
     <main>
-      <section class="intro">
-        <div><p class="eyebrow">ONE DECK. TWO PEOPLE.</p><h1>A little table.<br>A shared choice.</h1></div>
-        <p class="intro-copy">Ten cards. One reveal.<br>Invite someone. Take turns choosing.</p>
-      </section>
-
-      <div class="game-layout">
-        <aside class="sidebar" aria-label="Game controls">
-          <section class="session-panel" id="setup-panel">
-            <p class="eyebrow">TAKE A SEAT</p>
-            <h2>Start something small.</h2>
-            <p class="muted">Open a table and invite one other person.</p>
-            <button class="button primary" id="create-button"><span aria-hidden="true">＋</span> Create a table</button>
-            <div class="divider"><span>or join a friend</span></div>
-            <form id="join-form">
-              <label for="join-input">Invite link</label>
-              <input id="join-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Paste their invite link" aria-describedby="join-hint">
-              <button class="button secondary" id="join-button" type="submit">Join table <span aria-hidden="true">↗</span></button>
-              <p class="input-hint" id="join-hint">You’ll join as the guest.</p>
-            </form>
-            <button class="practice-link" id="practice-button">Just exploring? Try it on this device <span aria-hidden="true">→</span></button>
+      <section class="intro"><div><p class="eyebrow">A DECK. A BID. A LITTLE NERVE.</p><h1>Take your seat.</h1></div><p>Twelve packs to play.<br>Seven games to win.</p></section>
+      <div class="workspace">
+        <aside class="sidebar">
+          <section class="panel" id="setup-panel">
+            <p class="eyebrow">OPEN A TABLE</p><h2>A seat for a friend.</h2><p class="muted">One person hosts. The other joins with an invite link.</p>
+            <button class="button primary" id="create-button">＋ Create a table</button>
+            <div class="divider">or join a friend</div>
+            <form id="join-form"><label for="join-input">Invite link</label><input id="join-input" placeholder="Paste their invite link" autocomplete="off" spellcheck="false"><button class="button secondary" id="join-button" type="submit">Join table ↗</button><p class="hint" id="join-hint">You’ll join as the guest.</p></form>
+            <button class="practice-link" id="practice-button">Try both seats on this device →</button>
           </section>
-
-          <section class="session-panel" id="active-panel" hidden>
-            <p class="eyebrow" id="role-label">YOUR TABLE</p>
-            <h2 id="session-title">A seat for a friend.</h2>
-            <div class="seats" aria-label="Players">
-              <div class="seat"><span class="avatar" aria-hidden="true">H</span><span>Host<small id="host-seat-label">You</small></span><span class="seat-dot online" id="host-dot" aria-label="Present"></span></div>
-              <div class="seat"><span class="avatar guest-avatar" aria-hidden="true">G</span><span>Guest<small id="guest-seat-label">Waiting for a friend</small></span><span class="seat-dot" id="guest-dot" aria-label="Not connected"></span></div>
-            </div>
-            <div id="invite-section" hidden>
-              <label for="invite-output">Your invite link</label>
-              <input id="invite-output" type="text" readonly aria-label="Your invite link" spellcheck="false">
-              <button class="button secondary" id="copy-button">Copy invite link <span aria-hidden="true">↗</span></button>
-              <p class="input-hint">Anyone with this link can take the guest seat.</p>
-            </div>
-            <p class="session-guidance" id="session-guidance">Your game lasts while this page stays open.</p>
-            <button class="button primary" id="deal-button" hidden>Deal ten cards <span aria-hidden="true">↻</span></button>
-            <button class="text-button end-button" id="leave-button">End game</button>
+          <section class="panel" id="active-panel" hidden>
+            <p class="eyebrow" id="role-label">YOUR SEAT</p><h2 id="session-title">Your shared table.</h2>
+            <div id="invite-section" hidden><label for="invite-output">Your invite link</label><input id="invite-output" readonly spellcheck="false"><button class="button secondary" id="copy-button">Copy invite link ↗</button></div>
+            <div class="practice-controls" id="practice-controls" hidden><p>Local rehearsal: you control both seats. The view follows the active player.</p><button class="button secondary" id="switch-seat">View the other seat</button></div>
+            <p class="hint" id="session-guidance">The original host keeps the session open.</p>
+            <button class="text-button leave" id="leave-button">Leave table</button>
           </section>
-
-          <section class="note-card"><span class="note-suit" aria-hidden="true">♣</span><div><strong>One choice, one reveal.</strong><p>The dealer sees card backs until the chosen card is revealed.</p></div></section>
-        </aside>
-
-        <section class="table-section" aria-label="Shared card table">
-          <div class="table-toolbar"><span id="round-label">YOUR SHARED TABLE</span><span class="status-pill" id="status-pill"><span class="status-dot" aria-hidden="true"></span><span id="status-label">Not connected</span></span></div>
-          <div class="felt" id="felt">
-            <div class="felt-heading"><span class="felt-rule"></span><span id="felt-label">TEN CARDS · ONE CHOICE</span><span class="felt-rule"></span></div>
-            <div class="cards-grid" id="cards-grid" aria-label="Ten dealt cards"></div>
-            <div class="table-empty" id="table-empty"><span class="empty-suit" aria-hidden="true">♠</span><h2 id="empty-title">Ready when you are.</h2><p id="empty-copy">Create a table to deal your first ten cards.</p></div>
-            <div class="felt-footer"><span id="table-instruction">A full deck. A fresh deal. A shared moment.</span><span class="felt-deck" aria-hidden="true">52</span></div>
-          </div>
-          <div class="selection-panel" aria-live="polite" aria-atomic="true"><span class="selection-icon" aria-hidden="true">◇</span><div><span class="eyebrow">THE CHOICE</span><p id="selection-copy">Every good choice starts with a deal.</p></div><span id="selection-tag" class="selection-tag" hidden>SELECTED</span></div>
-          <p id="connection-message" class="connection-message" role="status" aria-live="polite">Create a table, or use an invite link to join one.</p>
+          <section class="panel score-panel" aria-label="Match score"><p class="eyebrow">FIRST TO SEVEN</p><div class="score-row"><span id="host-name">Host</span><strong id="host-score">0</strong></div><div class="score-row"><span id="guest-name">Guest</span><strong id="guest-score">0</strong></div><p class="hint" id="dealer-label">Host deals first</p></section>
+          <section class="panel contract-panel"><p class="eyebrow">THE CONTRACT</p><h3 id="contract-label">A fresh possibility.</h3><p id="trump-label" class="muted">Trump is not called yet.</p><div id="target-section" hidden><div class="target-line"><span id="defender-label">Defender</span><strong id="target-count">0 / 5</strong></div><progress id="target-progress" max="5" value="0" aria-label="Defender’s progress"></progress><p id="target-description" class="hint"></p></div><div class="pack-counts"><span>Host packs <b id="host-packs">0</b></span><span>Guest packs <b id="guest-packs">0</b></span></div></section>
+          <div class="connection-status"><span class="status-dot" id="status-dot"></span><span id="status-label">Not connected</span></div>
+          <p id="connection-message" class="connection-message" role="status" aria-live="polite">Create a table, or try a local rehearsal.</p>
           <div class="error-panel" id="error-panel" role="alert" hidden><span id="error-message"></span><button class="text-button" id="dismiss-error" aria-label="Dismiss error">×</button></div>
-        </section>
+        </aside>
+        <div class="board-column">
+          <section class="phase-panel" aria-live="polite" aria-atomic="false">
+            <div class="phase-heading"><div><p class="eyebrow" id="stage-label">WELCOME TO THE TABLE</p><h2 id="stage-title">Every game starts with a deal.</h2></div><span class="phase-chip" id="game-label">GAME 01</span></div>
+            <p id="stage-instruction">Create a table and invite a friend, or explore both seats in local practice.</p>
+            <div id="auction-history" class="auction-history"></div>
+            <div id="bid-controls" class="action-row" hidden><label for="bid-select">Your one bid</label><select id="bid-select" aria-label="Choose a bid"></select><button class="button primary" id="bid-button">Place bid</button><button class="button secondary" id="pass-button">Pass</button></div>
+            <div id="trump-controls" class="trump-controls" hidden><button class="suit-button" id="trump-S" data-suit="S" aria-label="Call spades trump">♠ <span>Spades</span></button><button class="suit-button red" id="trump-H" data-suit="H" aria-label="Call hearts trump">♥ <span>Hearts</span></button><button class="suit-button red" id="trump-D" data-suit="D" aria-label="Call diamonds trump">♦ <span>Diamonds</span></button><button class="suit-button" id="trump-C" data-suit="C" aria-label="Call clubs trump">♣ <span>Clubs</span></button></div>
+            <div id="discard-controls" class="action-row" hidden><span id="discard-counter">0 of 4 selected</span><button class="button primary" id="discard-button">Discard four cards</button></div>
+            <div id="next-controls" class="action-row" hidden><button class="button primary" id="next-button">Deal the first game</button></div>
+            <div id="result-panel" class="result-panel" hidden><strong id="result-title"></strong><p id="result-description"></p></div>
+          </section>
+          <section class="felt" aria-label="Card table">
+            <div class="table-zone opponent-zone"><div class="zone-heading"><span id="opponent-label">GUEST’S TABLE</span><span id="opponent-hand-count">12 private cards</span></div><div class="opponent-hand" id="opponent-hand" aria-label="Opponent’s hand"></div><div class="stacks" id="opponent-table" aria-label="Opponent’s three table stacks"></div></div>
+            <section class="pack-zone"><div class="pack-heading"><span class="rule"></span><span id="pack-label">THE FIRST PACK AWAITS</span><span class="rule"></span></div><p id="pack-instruction">The bid winner will lead.</p><div class="pack-cards" id="pack-cards" aria-label="Cards played in the current pack"></div></section>
+            <div class="table-zone own-zone"><div class="zone-heading"><span id="own-table-label">YOUR TABLE</span><span id="table-hint">Three stacks of four</span></div><div class="stacks" id="own-table" aria-label="Your three table stacks"></div></div>
+          </section>
+          <section class="hand-panel"><div class="section-heading"><div><p class="eyebrow" id="hand-eyebrow">YOUR PRIVATE HAND</p><h2 id="hand-title">Twelve cards. Your call.</h2></div><span id="hand-count" class="count-chip">12 CARDS</span></div><p class="hint" id="hand-instruction">Only you see these card faces during play.</p><div class="hand-grid" id="own-hand" aria-label="Your hand"></div></section>
+          <section class="hand-panel kitty-panel" id="kitty-panel" hidden><div class="section-heading"><div><p class="eyebrow">FOUR MORE POSSIBILITIES</p><h2>The kitty.</h2></div><span id="kitty-status" class="count-chip">PRIVATE</span></div><p id="kitty-instruction" class="hint"></p><div class="kitty-grid" id="kitty-cards" aria-label="The kitty"></div></section>
+          <section class="hand-panel" id="discard-panel" hidden><p class="eyebrow">THE FOUR DISCARDS</p><div class="kitty-grid" id="discard-cards" aria-label="Revealed discards"></div></section>
+          <details class="history-panel" id="history-panel"><summary id="history-summary">Completed packs · 0</summary><div id="pack-history"></div></details>
+          <details class="history-panel" id="games-panel"><summary>Match results</summary><div id="game-history"></div></details>
+        </div>
       </div>
     </main>
-    <footer class="site-footer"><span>Made for a little connection.</span><span>2 PEOPLE <span aria-hidden="true">·</span> 10 CARDS <span aria-hidden="true">·</span> 1 CHOICE</span></footer>
+    <footer class="site-footer"><span>Made for a little connection. <small id="build-label">Loading game…</small></span><span>2 PLAYERS · 12 PACKS · FIRST TO 7</span></footer>
   </div>
-  <div class="toast" id="toast" role="status" hidden>Invite link copied.</div>
-  <noscript><p class="noscript">Please enable JavaScript to use Ten Cards.</p></noscript>
+  <div class="celebration" id="celebration" role="status" aria-live="assertive" hidden><span id="celebration-text">BOLO</span></div>
+  <div class="toast" id="toast" role="status" hidden>Invite copied.</div>
+  <noscript><p class="noscript">Please enable JavaScript to play.</p></noscript>
 <script>
 (() => {
 'use strict';
-/** Pure game rules. This module has no knowledge of the page or network. */
+const __packsModules = Object.create(null);
+// src/version.js
+__packsModules["version"] = (() => {
+// Also carried in invite URLs so guests request the same release of the page.
+const APP_VERSION = '0.4.0';
+
+return {APP_VERSION};
+})();
+
+// src/game.js
+__packsModules["game"] = (() => {
+/** Pure rules for a two-player, twelve-pack card game. No page or network code. */
 const SUITS = Object.freeze({
   S: { symbol: '♠', color: 'black', name: 'spades' },
   H: { symbol: '♥', color: 'red', name: 'hearts' },
@@ -1089,10 +266,13 @@ const RANK_NAMES = Object.freeze({
 });
 const CARD_IDS = new Set(Object.keys(SUITS).flatMap(suit => RANKS.map(rank => rank + suit)));
 const UINT32_RANGE = 0x100000000;
+const GAME_PHASES = new Set(['lobby', 'auction', 'trump_before', 'kitty', 'trump_after',
+  'play', 'pack_complete', 'game_over', 'match_over']);
+const ALL_BIDS = Object.freeze(Array.from({ length: 6 }, (_, i) => [
+  { number: i + 3, mode: 'high' }, { number: i + 3, mode: 'low' },
+]).flat());
 
-function createDeck() {
-  return [...CARD_IDS];
-}
+function createDeck() { return [...CARD_IDS]; }
 
 function describeCard(id) {
   if (!CARD_IDS.has(id)) throw new RangeError('Unknown card ID.');
@@ -1103,33 +283,43 @@ function describeCard(id) {
     name: `${RANK_NAMES[rank]} of ${details.name}` };
 }
 
+function otherPlayer(role) {
+  return role === 'host' ? 'guest' : role === 'guest' ? 'host' : null;
+}
+
+function bidLabel(bid) {
+  return validBid(bid) ? `${bid.number} ${bid.mode === 'high' ? 'High' : 'Low'}` : '';
+}
+
 function createGame() {
-  return { round: 0, revision: 0, dealer: 'host', cards: [], selectedCard: null };
+  return {
+    schema: 3, revision: 0, phase: 'lobby', gameNumber: 0, dealer: 'host',
+    scores: { host: 0, guest: 0 }, games: [],
+    auction: { turn: null, entries: [] }, contract: null, trump: null,
+    hands: { host: [], guest: [] }, table: { host: [[], [], []], guest: [[], [], []] },
+    kitty: [], discards: [], currentPack: null, packs: { host: 0, guest: 0 },
+    history: [], result: null, matchWinner: null,
+  };
 }
 
-/** The completed choice changes whose turn comes next, not the current deal. */
-function getNextDealer(state) {
-  if (!isValidState(state)) return null;
-  return state.selectedCard === null ? state.dealer : (state.dealer === 'host' ? 'guest' : 'host');
+function isRole(value) { return value === 'host' || value === 'guest'; }
+function isObject(value) { return Boolean(value && typeof value === 'object' && !Array.isArray(value)); }
+function isCount(value, maximum) { return Number.isSafeInteger(value) && value >= 0 && value <= maximum; }
+function cardSuit(card) { return card.slice(-1); }
+function validBid(bid) {
+  return isObject(bid) && Number.isInteger(bid.number) && bid.number >= 3 && bid.number <= 8
+    && (bid.mode === 'high' || bid.mode === 'low');
 }
-
-function canDeal(state, role) {
-  return (role === 'host' || role === 'guest') && isValidState(state)
-    && role === getNextDealer(state);
+function bidOrder(bid) { return (bid.number - 3) * 2 + (bid.mode === 'low' ? 1 : 0); }
+function defenderTarget(number) { return Math.max(1, 8 - number); }
+function validCards(cards, maximum) {
+  return Array.isArray(cards) && cards.length <= maximum && [...cards].every(card => CARD_IDS.has(card));
 }
-
-function canSelect(state, role) {
-  return (role === 'host' || role === 'guest') && isValidState(state)
-    && state.round > 0 && state.selectedCard === null && role !== state.dealer;
-}
-
 function secureRandom() {
   return globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / UINT32_RANGE;
 }
-
 function randomIndex(size, random) {
   if (random === secureRandom) {
-    // Rejection sampling keeps every index equally likely, without modulo bias.
     const limit = UINT32_RANGE - (UINT32_RANGE % size);
     const bytes = new Uint32Array(1);
     let value;
@@ -1142,90 +332,475 @@ function randomIndex(size, random) {
   }
   return Math.floor(value * size);
 }
-
-function dealCards(state, random = secureRandom) {
-  if (!isValidState(state)) throw new TypeError('Cannot deal from an invalid game state.');
-  if (typeof random !== 'function') throw new TypeError('Random source must be a function.');
+function shuffledDeck(random) {
   const deck = createDeck();
-  // Fisher–Yates: shuffle a fresh full deck before each ten-card deal.
   for (let i = deck.length - 1; i > 0; i -= 1) {
     const j = randomIndex(i + 1, random);
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
+  return deck;
+}
+function activePlayer(state) {
+  if (state.phase === 'lobby' || state.phase === 'match_over') return 'host';
+  if (state.phase === 'game_over') return otherPlayer(state.dealer);
+  if (state.phase === 'auction') return state.auction.turn;
+  if (['trump_before', 'kitty', 'trump_after'].includes(state.phase)) return state.contract.bidder;
+  if (state.phase === 'pack_complete') return state.history.at(-1).winner;
+  if (state.phase === 'play') {
+    return state.currentPack.plays.length % 2 === 0
+      ? state.currentPack.leader : otherPlayer(state.currentPack.leader);
+  }
+  return null;
+}
+function getActivePlayer(state) { return isValidState(state) ? activePlayer(state) : null; }
+
+function legalPool(pool, ledSuit) {
+  const suited = ledSuit ? pool.filter(card => cardSuit(card) === ledSuit) : [];
+  return suited.length ? suited : pool;
+}
+function emptyActions() {
+  return { canDeal: false, canBid: false, canPass: false, bids: [], canCallTrump: false,
+    canDiscard: false, handCards: [], tableStacks: [], canContinue: false, canNewMatch: false };
+}
+function getLegalActions(state, role) {
+  const legal = emptyActions();
+  if (!isRole(role) || !isValidState(state) || state.revision === Number.MAX_SAFE_INTEGER
+    || role !== activePlayer(state)) return legal;
+  if (state.phase === 'lobby' || state.phase === 'game_over') legal.canDeal = true;
+  else if (state.phase === 'match_over') legal.canNewMatch = true;
+  else if (state.phase === 'auction') {
+    const previous = state.auction.entries.find(entry => entry.type === 'bid');
+    legal.bids = ALL_BIDS.filter(bid => !previous || bidOrder(bid) > bidOrder(previous))
+      .map(bid => ({ ...bid }));
+    legal.canBid = legal.bids.length > 0;
+    legal.canPass = state.auction.entries.length === 0 || Boolean(previous);
+  } else if (state.phase === 'trump_before' || state.phase === 'trump_after') legal.canCallTrump = true;
+  else if (state.phase === 'kitty') legal.canDiscard = true;
+  else if (state.phase === 'pack_complete') legal.canContinue = true;
+  else if (state.phase === 'play') {
+    const pack = state.currentPack;
+    if (pack.plays.length < 2) legal.handCards = [...legalPool(state.hands[role], pack.ledSuit)];
+    else {
+      const tops = state.table[role].map(stack => stack[0]).filter(Boolean);
+      const permitted = new Set(legalPool(tops, pack.ledSuit));
+      legal.tableStacks = state.table[role].flatMap((stack, index) => permitted.has(stack[0]) ? [index] : []);
+    }
+  }
+  return legal;
+}
+
+function nextPack(state, leader) {
+  state.currentPack = { number: state.history.length + 1, leader, ledSuit: null, plays: [] };
+  state.phase = 'play';
+}
+function finishAuction(state) {
+  const winning = [...state.auction.entries].reverse().find(entry => entry.type === 'bid');
+  state.auction.turn = null;
+  state.contract = { bidder: winning.role, defender: otherPlayer(winning.role),
+    number: winning.number, mode: winning.mode, target: defenderTarget(winning.number) };
+  state.phase = winning.role === state.dealer ? 'trump_before' : 'kitty';
+}
+function rankStrength(card, mode) {
+  const index = RANKS.indexOf(card.slice(0, -1));
+  return index === 0 ? 14 : mode === 'low' ? 14 - index : index + 1;
+}
+function packWinner(pack, trump, mode) {
+  let strongest = null;
+  let bestSuit = -1;
+  let bestRank = -1;
+  for (const play of pack.plays) {
+    const suit = cardSuit(play.cardId);
+    const suitStrength = suit === trump ? 2 : suit === pack.ledSuit ? 1 : 0;
+    const rank = rankStrength(play.cardId, mode);
+    if (suitStrength > bestSuit || (suitStrength === bestSuit && rank > bestRank)) {
+      strongest = play.role; bestSuit = suitStrength; bestRank = rank;
+    }
+  }
+  return strongest;
+}
+function calculateResult(contract, packs, reason) {
+  const winner = reason === 'target' ? contract.defender : contract.bidder;
+  const loser = otherPlayer(winner);
+  let points = 1;
+  let badge = null;
+  if (winner === contract.bidder && packs[contract.defender] === 0) { points = 2; badge = 'BOLO'; }
+  else if (winner === contract.bidder && packs[contract.defender] === 1) badge = 'SIDE BOLO';
+  else if (winner === contract.defender && packs[contract.bidder] === 0) { points = 2; badge = 'REVERSE BOLO'; }
+  return { winner, loser, points, badge, reason };
+}
+function finishGame(state, reason) {
+  state.result = calculateResult(state.contract, state.packs, reason);
+  state.scores[state.result.winner] += state.result.points;
+  state.games.push({ gameNumber: state.gameNumber, dealer: state.dealer, ...state.result,
+    packs: { ...state.packs }, bid: { number: state.contract.number, mode: state.contract.mode },
+    bidder: state.contract.bidder });
+  if (state.scores[state.result.winner] >= 7) {
+    state.phase = 'match_over'; state.matchWinner = state.result.winner;
+  } else state.phase = 'game_over';
+}
+function playCard(state, role, source, cardId, stackIndex) {
+  const pack = state.currentPack;
+  if (source === 'hand') state.hands[role].splice(state.hands[role].indexOf(cardId), 1);
+  else state.table[role][stackIndex].shift();
+  if (pack.plays.length === 0) pack.ledSuit = cardSuit(cardId);
+  pack.plays.push({ role, source, cardId, stackIndex });
+  if (pack.plays.length !== 4) return;
+  const winner = packWinner(pack, state.trump, state.contract.mode);
+  state.history.push({ ...pack, winner });
+  state.packs[winner] += 1;
+  state.currentPack = null;
+  if (state.packs[state.contract.defender] >= state.contract.target) finishGame(state, 'target');
+  else if (state.history.length === 12) finishGame(state, 'exhausted');
+  else state.phase = 'pack_complete';
+}
+
+function applyAction(state, role, action, random = secureRandom) {
+  if (!isObject(action) || typeof action.type !== 'string') return state;
+  const legal = getLegalActions(state, role);
+  let next;
+  if (action.type === 'deal' && legal.canDeal) {
+    if (typeof random !== 'function') return state;
+    let deck;
+    try { deck = shuffledDeck(random); } catch { return state; }
+    next = createGame();
+    next.gameNumber = state.gameNumber + 1;
+    next.dealer = role;
+    next.scores = { ...state.scores };
+    next.games = structuredClone(state.games);
+    next.auction.turn = otherPlayer(role);
+    next.phase = 'auction';
+    const recipients = [otherPlayer(role), role];
+    for (let stack = 0; stack < 3; stack += 1) {
+      for (const recipient of recipients) next.table[recipient][stack] = deck.splice(0, 4);
+    }
+    next.kitty = deck.splice(0, 4);
+    for (const recipient of recipients) next.hands[recipient] = deck.splice(0, 12);
+  } else if (action.type === 'newMatch' && legal.canNewMatch) next = createGame();
+  else if (action.type === 'bid' && legal.bids.some(bid => bid.number === action.number && bid.mode === action.mode)) {
+    next = structuredClone(state);
+    next.auction.entries.push({ role, type: 'bid', number: action.number, mode: action.mode });
+    if (next.auction.entries.length === 1) next.auction.turn = state.dealer;
+    else finishAuction(next);
+  } else if (action.type === 'pass' && legal.canPass) {
+    next = structuredClone(state);
+    next.auction.entries.push({ role, type: 'pass' });
+    if (next.auction.entries.length === 1) next.auction.turn = state.dealer;
+    else finishAuction(next);
+  } else if (action.type === 'trump' && legal.canCallTrump
+    && typeof action.suit === 'string' && Object.hasOwn(SUITS, action.suit)) {
+    next = structuredClone(state);
+    next.trump = action.suit;
+    if (state.phase === 'trump_before') next.phase = 'kitty';
+    else nextPack(next, next.contract.bidder);
+  } else if (action.type === 'discard' && legal.canDiscard && validCards(action.cards, 4)
+    && action.cards.length === 4 && new Set(action.cards).size === 4
+    && action.cards.every(card => [...state.hands[role], ...state.kitty].includes(card))) {
+    next = structuredClone(state);
+    const discarded = new Set(action.cards);
+    next.hands[role] = [...state.hands[role], ...state.kitty].filter(card => !discarded.has(card));
+    next.discards = [...action.cards]; next.kitty = [];
+    if (state.trump) nextPack(next, next.contract.bidder);
+    else next.phase = 'trump_after';
+  } else if (action.type === 'playHand' && legal.handCards.includes(action.cardId)) {
+    next = structuredClone(state);
+    playCard(next, role, 'hand', action.cardId, null);
+  } else if (action.type === 'playTable' && legal.tableStacks.includes(action.stackIndex)) {
+    next = structuredClone(state);
+    playCard(next, role, 'table', state.table[role][action.stackIndex][0], action.stackIndex);
+  } else if (action.type === 'continue' && legal.canContinue) {
+    next = structuredClone(state);
+    nextPack(next, state.history.at(-1).winner);
+  } else return state;
+  next.revision = state.revision + 1;
+  return next;
+}
+
+function validPacks(packs) {
+  return isObject(packs) && isCount(packs.host, 12) && isCount(packs.guest, 12)
+    && packs.host + packs.guest <= 12;
+}
+function validResult(result) {
+  return isObject(result) && isRole(result.winner) && result.loser === otherPlayer(result.winner)
+    && [1, 2].includes(result.points) && [null, 'BOLO', 'SIDE BOLO', 'REVERSE BOLO'].includes(result.badge)
+    && ['target', 'exhausted'].includes(result.reason);
+}
+function sameResult(a, b) {
+  return a.winner === b.winner && a.loser === b.loser && a.points === b.points
+    && a.badge === b.badge && a.reason === b.reason;
+}
+function validPlay(play, leader, index) {
+  return isObject(play) && play.role === (index % 2 === 0 ? leader : otherPlayer(leader))
+    && play.source === (index < 2 ? 'hand' : 'table') && CARD_IDS.has(play.cardId)
+    && (play.source === 'hand' ? play.stackIndex === null : isCount(play.stackIndex, 2));
+}
+function validPack(pack, number, leader, completed, trump, mode) {
+  if (!isObject(pack) || pack.number !== number || pack.leader !== leader || !isRole(pack.leader)
+    || !Array.isArray(pack.plays) || pack.plays.length > (completed ? 4 : 3)
+    || (completed && pack.plays.length !== 4)
+    || !pack.plays.every((play, index) => validPlay(play, leader, index))) return false;
+  if (pack.ledSuit !== (pack.plays.length ? cardSuit(pack.plays[0].cardId) : null)) return false;
+  return !completed || pack.winner === packWinner(pack, trump, mode);
+}
+function validAuction(state) {
+  const { entries, turn } = state.auction;
+  const opener = otherPlayer(state.dealer);
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index];
+    if (!isObject(entry) || entry.role !== (index === 0 ? opener : state.dealer)) return false;
+    if (entry.type === 'bid') {
+      if (!validBid(entry)) return false;
+      if (index === 1 && entries[0].type === 'bid' && bidOrder(entry) <= bidOrder(entries[0])) return false;
+    } else if (entry.type !== 'pass' || (index === 1 && entries[0].type === 'pass')) return false;
+  }
+  if (state.phase === 'lobby') return entries.length === 0 && turn === null;
+  if (state.phase === 'auction') return entries.length <= 1 && turn === (entries.length ? state.dealer : opener);
+  if (entries.length !== 2 || turn !== null) return false;
+  const winning = [...entries].reverse().find(entry => entry.type === 'bid');
+  return winning && state.contract?.bidder === winning.role
+    && state.contract.number === winning.number && state.contract.mode === winning.mode;
+}
+function checkGameRecord(record, index) {
+  if (!isObject(record) || record.gameNumber !== index + 1
+    || record.dealer !== (index % 2 === 0 ? 'host' : 'guest') || !validResult(record)
+    || !validBid(record.bid) || !isRole(record.bidder) || !validPacks(record.packs)) return false;
+  const contract = { bidder: record.bidder, defender: otherPlayer(record.bidder),
+    number: record.bid.number, mode: record.bid.mode, target: defenderTarget(record.bid.number) };
+  const total = record.packs.host + record.packs.guest;
+  if (total < 1 || (record.reason === 'target'
+    ? record.packs[contract.defender] !== contract.target
+    : total !== 12 || record.packs[contract.defender] >= contract.target)) return false;
+  return sameResult(record, calculateResult(contract, record.packs, record.reason));
+}
+function checkPlayedPools(state) {
+  // Reconstruct each pool before each play. This validates following suit without
+  // treating buried table cards, or the other pool, as available choices.
+  const hands = { host: [...state.hands.host], guest: [...state.hands.guest] };
+  const table = { host: state.table.host.map(stack => [...stack]),
+    guest: state.table.guest.map(stack => [...stack]) };
+  const packs = [...state.history, ...(state.currentPack ? [state.currentPack] : [])];
+  for (let p = packs.length - 1; p >= 0; p -= 1) {
+    const pack = packs[p];
+    for (let i = pack.plays.length - 1; i >= 0; i -= 1) {
+      const play = pack.plays[i];
+      if (play.source === 'hand') hands[play.role].push(play.cardId);
+      else table[play.role][play.stackIndex].unshift(play.cardId);
+      const pool = play.source === 'hand' ? hands[play.role] : table[play.role].map(stack => stack[0]).filter(Boolean);
+      if (cardSuit(play.cardId) !== pack.ledSuit && pool.some(card => cardSuit(card) === pack.ledSuit)) return false;
+    }
+  }
+  return hands.host.length === 12 && hands.guest.length === 12
+    && [...table.host, ...table.guest].every(stack => stack.length === 4);
+}
+
+function isValidState(state) {
+  if (!isObject(state) || state.schema !== 3 || !isCount(state.revision, Number.MAX_SAFE_INTEGER)
+    || !GAME_PHASES.has(state.phase) || !isCount(state.gameNumber, 13) || !isRole(state.dealer)
+    || !isObject(state.scores) || !isCount(state.scores.host, 8) || !isCount(state.scores.guest, 8)
+    || !Array.isArray(state.games) || state.games.length > 13
+    || !isObject(state.auction) || !Array.isArray(state.auction.entries) || state.auction.entries.length > 2
+    || !isObject(state.hands) || !validCards(state.hands.host, 12) || !validCards(state.hands.guest, 12)
+    || !isObject(state.table) || !['host', 'guest'].every(role => Array.isArray(state.table[role])
+      && state.table[role].length === 3 && [...state.table[role]].every(stack => validCards(stack, 4)))
+    || !validCards(state.kitty, 4) || !validCards(state.discards, 4) || !validPacks(state.packs)
+    || !Array.isArray(state.history) || state.history.length > 12
+    || (state.trump !== null && (typeof state.trump !== 'string' || !Object.hasOwn(SUITS, state.trump)))
+    || (state.matchWinner !== null && !isRole(state.matchWinner))) return false;
+  const ended = state.phase === 'game_over' || state.phase === 'match_over';
+  if (state.games.length !== state.gameNumber - (state.phase === 'lobby' || ended ? 0 : 1)) return false;
+  const score = { host: 0, guest: 0 };
+  for (let i = 0; i < state.games.length; i += 1) {
+    const game = state.games[i];
+    if (!checkGameRecord(game, i) || score.host >= 7 || score.guest >= 7) return false;
+    score[game.winner] += game.points;
+  }
+  if (score.host !== state.scores.host || score.guest !== state.scores.guest) return false;
+  if (!validAuction(state)) return false;
+  const cards = [...state.hands.host, ...state.hands.guest, ...state.table.host.flat(),
+    ...state.table.guest.flat(), ...state.kitty, ...state.discards];
+  if (state.phase === 'lobby') {
+    return state.gameNumber === 0 && state.dealer === 'host' && cards.length === 0
+      && state.contract === null && state.trump === null && state.currentPack === null
+      && state.history.length === 0 && state.packs.host === 0 && state.packs.guest === 0
+      && state.result === null && state.matchWinner === null;
+  }
+  if (state.gameNumber < 1 || state.dealer !== (state.gameNumber % 2 === 1 ? 'host' : 'guest')) return false;
+  if (state.phase === 'auction') {
+    if (state.contract !== null) return false;
+  } else if (!isObject(state.contract) || !validBid(state.contract) || !isRole(state.contract.bidder)
+    || state.contract.defender !== otherPlayer(state.contract.bidder)
+    || state.contract.target !== defenderTarget(state.contract.number)) return false;
+  const beforePlay = ['auction', 'trump_before', 'kitty', 'trump_after'].includes(state.phase);
+  if (beforePlay) {
+    if (state.currentPack !== null || state.history.length !== 0 || state.packs.host !== 0 || state.packs.guest !== 0
+      || state.hands.host.length !== 12 || state.hands.guest.length !== 12
+      || ![...state.table.host, ...state.table.guest].every(stack => stack.length === 4)) return false;
+    const afterKitty = state.phase === 'trump_after';
+    if (state.kitty.length !== (afterKitty ? 0 : 4) || state.discards.length !== (afterKitty ? 4 : 0)) return false;
+    if (state.phase === 'auction' && state.trump !== null) return false;
+    if (state.phase === 'trump_before' && (state.contract.bidder !== state.dealer || state.trump !== null)) return false;
+    if (state.phase === 'trump_after' && (state.contract.bidder === state.dealer || state.trump !== null)) return false;
+    if (state.phase === 'kitty' && ((state.contract.bidder === state.dealer) !== (state.trump !== null))) return false;
+  } else {
+    if (state.trump === null || state.kitty.length !== 0 || state.discards.length !== 4) return false;
+    let leader = state.contract.bidder;
+    const counted = { host: 0, guest: 0 };
+    for (let i = 0; i < state.history.length; i += 1) {
+      const pack = state.history[i];
+      if (!validPack(pack, i + 1, leader, true, state.trump, state.contract.mode)) return false;
+      counted[pack.winner] += 1;
+      if (i < state.history.length - 1 && counted[state.contract.defender] >= state.contract.target) return false;
+      cards.push(...pack.plays.map(play => play.cardId));
+      leader = pack.winner;
+    }
+    if (counted.host !== state.packs.host || counted.guest !== state.packs.guest) return false;
+    if (state.phase === 'play') {
+      if (state.history.length >= 12 || !validPack(state.currentPack, state.history.length + 1,
+        leader, false, state.trump, state.contract.mode)) return false;
+      cards.push(...state.currentPack.plays.map(play => play.cardId));
+    } else if (state.currentPack !== null || state.history.length === 0) return false;
+    if (!ended && (state.history.length >= 12 || state.packs[state.contract.defender] >= state.contract.target)) return false;
+    if (!checkPlayedPools(state)) return false;
+  }
+  if (cards.length !== 52 || new Set(cards).size !== 52) return false;
+  if (!ended) return state.result === null && state.matchWinner === null && score.host < 7 && score.guest < 7;
+  if (!validResult(state.result)) return false;
+  const reason = state.packs[state.contract.defender] >= state.contract.target ? 'target'
+    : state.history.length === 12 ? 'exhausted' : null;
+  if (!reason || !sameResult(state.result, calculateResult(state.contract, state.packs, reason))) return false;
+  const record = state.games.at(-1);
+  if (record.dealer !== state.dealer || record.bidder !== state.contract.bidder
+    || record.bid.number !== state.contract.number || record.bid.mode !== state.contract.mode
+    || record.packs.host !== state.packs.host || record.packs.guest !== state.packs.guest
+    || !sameResult(record, state.result)) return false;
+  return state.phase === 'match_over'
+    ? state.matchWinner === state.result.winner && score[state.matchWinner] >= 7
+    : state.matchWinner === null && score.host < 7 && score.guest < 7;
+}
+
+return {createDeck,describeCard,otherPlayer,bidLabel,createGame,getActivePlayer,getLegalActions,applyAction,isValidState};
+})();
+
+// src/view.js
+__packsModules["view"] = (() => {
+const { isValidState, describeCard, getLegalActions, getActivePlayer, otherPlayer } = __packsModules["game"];
+
+/**
+ * The information drawn for one participant. Hidden card objects contain no
+ * identities. This is UI presentation, not a network privacy boundary: the
+ * original host still holds the authoritative full game state.
+ */
+function getPlayerView(state, role) {
+  if (!isValidState(state)) throw new TypeError('Cannot display an invalid game state.');
+  if (role !== 'host' && role !== 'guest') throw new TypeError('The viewer must be the host or guest.');
+
+  const opponent = otherPlayer(role);
+  const revealAll = state.phase === 'game_over' || state.phase === 'match_over';
+  const publicTables = ['play', 'pack_complete', 'game_over', 'match_over'].includes(state.phase);
+  const clone = value => structuredClone(value);
+  const faces = cards => cards.map(id => describeCard(id));
+  const backs = cards => cards.map((_, index) => ({ hidden: true, position: index + 1 }));
+
+  function projectPack(pack) {
+    if (!pack) return null;
+    const result = {
+      number: pack.number,
+      leader: pack.leader,
+      ledSuit: pack.ledSuit,
+      plays: pack.plays.map(play => ({
+        role: play.role,
+        source: play.source,
+        card: describeCard(play.cardId),
+        stackIndex: play.stackIndex,
+      })),
+    };
+    if (Object.hasOwn(pack, 'winner')) result.winner = pack.winner;
+    return result;
+  }
+
+  function projectTable(owner) {
+    return state.table[owner].map((stack, index) => {
+      // A played stack's replacement top stays covered until all four cards in
+      // the pack have been played, even though the old top is already public.
+      const playedThisPack = state.currentPack?.plays.some(play =>
+        play.role === owner && play.source === 'table' && play.stackIndex === index);
+      const showTop = revealAll || (publicTables && !playedThisPack);
+      const card = showTop && stack.length ? describeCard(stack[0]) : null;
+      const projected = { index, count: stack.length, card, hidden: stack.length > 0 && !showTop };
+      if (revealAll) projected.cards = faces(stack);
+      return projected;
+    });
+  }
+
+  const canSeeKitty = revealAll || (state.phase === 'kitty' && state.contract?.bidder === role);
   return {
-    round: state.round + 1,
-    revision: state.revision + 1,
-    dealer: getNextDealer(state),
-    cards: deck.slice(0, 10),
-    selectedCard: null,
+    role,
+    opponent,
+    phase: state.phase,
+    gameNumber: state.gameNumber,
+    dealer: state.dealer,
+    scores: clone(state.scores),
+    auction: clone(state.auction),
+    contract: clone(state.contract),
+    trump: state.trump,
+    packs: clone(state.packs),
+    history: clone(state.history),
+    result: clone(state.result),
+    matchWinner: state.matchWinner,
+    games: clone(state.games),
+    activePlayer: getActivePlayer(state),
+    legal: clone(getLegalActions(state, role)),
+    hand: faces(state.hands[role]),
+    opponentHand: revealAll ? faces(state.hands[opponent]) : backs(state.hands[opponent]),
+    ownTable: projectTable(role),
+    opponentTable: projectTable(opponent),
+    kitty: canSeeKitty ? faces(state.kitty) : backs(state.kitty),
+    discards: revealAll ? faces(state.discards) : backs(state.discards),
+    currentPack: projectPack(state.currentPack),
+    lastPack: projectPack(state.history.at(-1)),
   };
 }
 
-function selectCard(state, action) {
-  if (!action || typeof action !== 'object' || Array.isArray(action)
-    || !canSelect(state, action.role) || action.round !== state.round
-    || !state.cards.includes(action.cardId)) return state;
-  return { ...state, revision: state.revision + 1, selectedCard: action.cardId };
-}
+return {getPlayerView};
+})();
 
-function isValidState(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)
-    || !Number.isSafeInteger(value.round) || value.round < 0
-    || !Number.isSafeInteger(value.revision) || value.revision < value.round
-    || (value.dealer !== 'host' && value.dealer !== 'guest')
-    || !Array.isArray(value.cards)
-    || (value.selectedCard !== null && typeof value.selectedCard !== 'string')) return false;
-  if (value.round === 0) {
-    return value.revision === 0 && value.dealer === 'host'
-      && value.cards.length === 0 && value.selectedCard === null;
-  }
-  return value.cards.length === 10
-    && new Set(value.cards).size === 10
-    && value.cards.every(card => CARD_IDS.has(card))
-    && (value.selectedCard === null || value.cards.includes(value.selectedCard));
-}
-
-
-
-/**
- * Build the card information needed by one player's interface.
- * This controls presentation only; the shared game state still holds all cards.
- */
-function getCardViews(state, viewerRole) {
-  if (!isValidState(state)) throw new TypeError('Cannot display an invalid game state.');
-  if (viewerRole !== 'host' && viewerRole !== 'guest') {
-    throw new TypeError('The viewer must be the host or guest.');
-  }
-  return state.cards.map((id, index) => {
-    const selected = state.selectedCard === id;
-    const position = index + 1;
-    if (viewerRole === state.dealer && !selected) {
-      return { position, faceUp: false, selected: false };
-    }
-    return { position, faceUp: true, selected, ...describeCard(id) };
-  });
-}
-
-
+// src/session.js
+__packsModules["session"] = (() => {
 /**
  * Two-player WebRTC transport. PeerJS is supplied by the caller, not imported.
  * host() resolves to {hostId, secret}; join(invite) resolves after authentication.
- * All callbacks receive copies. Players alternate dealer and chooser while
- * the original host keeps the official state and shuffles every deal.
+ * All callbacks receive deep copies. The original host owns the official state
+ * throughout the auction, kitty exchange, and play. act(action) submits a game
+ * action; its return value reports local acceptance / request transmission.
+ * Guest requests are acknowledged with a state callback even when rejected.
  * close() is final: make a new session object for another game.
  * The invitation is a bearer capability; it stays in memory for this tab.
  */
+const { createGame, applyAction, isValidState } = __packsModules["game"];
 
-const VERSION = 2;
+const VERSION = 3;
 const HOST_ID = /^ten-[a-f0-9]{32}$/;
 const SECRET = /^[a-f0-9]{32}$/;
 const noop = () => {};
-const copy = state => ({ ...state, cards: [...state.cards] });
+const copy = state => structuredClone(state);
 const packet = (type, fields = {}) => ({ v: VERSION, type, ...fields });
 const packetShape = value => value !== null && typeof value === 'object' &&
   !Array.isArray(value) && typeof value.type === 'string';
 const validPacket = value => packetShape(value) && value.v === VERSION;
 const UPDATE_MESSAGE = 'These pages are running different game versions. Refresh both browsers, then create a new invite.';
+
+// Action payloads are small JSON records. Bound them before handing anything
+// remote to the game engine; never accept arbitrary objects or giant payloads.
+function normalizeAction(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) ||
+    typeof value.type !== 'string' || value.type.length < 1 || value.type.length > 40) return null;
+  try {
+    const json = JSON.stringify(value);
+    if (json.length > 4096) return null;
+    const action = JSON.parse(json);
+    return action && typeof action === 'object' && !Array.isArray(action) &&
+      typeof action.type === 'string' ? action : null;
+  } catch { return null; }
+}
 
 function randomHex() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)), byte =>
@@ -1422,9 +997,9 @@ function createSession({
       if (closed) return;
       if (conn !== connection && pending.has(conn) && packetShape(data) &&
         data.type === 'hello' && data.v !== VERSION) {
-        // Reply in v1 when requested so the original client receives a reject
-        // it understands, rather than waiting forever for an unknown protocol.
-        reject(conn, 'version-mismatch', data.v === 1 ? 1 : VERSION);
+        // Reply using either older supported envelope so those clients receive
+        // a reject they understand, rather than waiting for an unknown protocol.
+        reject(conn, 'version-mismatch', data.v === 1 || data.v === 2 ? data.v : VERSION);
         return;
       }
       if (!validPacket(data)) return;
@@ -1448,17 +1023,18 @@ function createSession({
       touch();
       if (data.type === 'ping') send(conn, packet('pong'));
       if (data.type === 'leave') { hostLostGuest(conn); safeClose(conn); }
-      if (data.type === 'select') {
-        // Sender identity comes from the authenticated connection, never from
-        // a role supplied by the remote browser.
-        const next = selectCard(state, { round: data.round, cardId: data.cardId, role: 'guest' });
-        if (next !== state) {
-          updateState(next);
-          if (!send(conn, packet('state', { state: copy(state) }))) hostLostGuest(conn);
+      if (data.type === 'action') {
+        const action = normalizeAction(data.action);
+        if (authenticated && phase === 'connected' && conn.open &&
+          Number.isSafeInteger(data.revision) && data.revision === state.revision && action) {
+          // Permanent sender identity comes from this authenticated connection,
+          // never an action.role or outer role supplied by the remote browser.
+          let next = state;
+          try { next = applyAction(state, 'guest', action); } catch { /* Reject invalid requests. */ }
+          if (next !== state) updateState(next);
         }
-      }
-      if (data.type === 'deal' && data.round === state.round && canDeal(state, 'guest')) {
-        updateState(dealCards(state));
+        // An unchanged snapshot acknowledges invalid or stale requests too.
+        // The guest can clear its pending indicator and use current legal moves.
         if (!send(conn, packet('state', { state: copy(state) }))) hostLostGuest(conn);
       }
     });
@@ -1506,7 +1082,7 @@ function createSession({
       }
       if (!authenticated) return;
       touch();
-      if (data.type === 'state' && isValidState(data.state) && data.state.revision > state.revision) {
+      if (data.type === 'state' && isValidState(data.state) && data.state.revision >= state.revision) {
         updateState(data.state);
       }
       if (data.type === 'ping') send(conn, packet('pong'));
@@ -1609,23 +1185,14 @@ function createSession({
       }
       return start('guest', { hostId: invite.hostId, secret: invite.secret });
     },
-    deal() {
-      if (closed || !canDeal(state, role)) return false;
-      if (role === 'guest') {
-        if (!authenticated || phase !== 'connected') return false;
-        return send(connection, packet('deal', { round: state.round }));
-      }
-      if (role !== 'host' || !signalingReady && !authenticated) return false;
-      updateState(dealCards(state));
-      if (connection && !send(connection, packet('state', { state: copy(state) }))) hostLostGuest(connection);
-      return true;
-    },
-    select(cardId) {
-      if (closed || !authenticated || phase !== 'connected' || !connection?.open ||
-        !canSelect(state, role) || !state.cards.includes(cardId)) return false;
-      if (role === 'guest') return send(connection, packet('select', { round: state.round, cardId }));
+    act(value) {
+      if (closed || !authenticated || phase !== 'connected' || !connection?.open) return false;
+      const action = normalizeAction(value);
+      if (!action) return false;
+      if (role === 'guest') return send(connection, packet('action', { revision: state.revision, action }));
       if (role !== 'host') return false;
-      const next = selectCard(state, { round: state.round, cardId, role: 'host' });
+      let next = state;
+      try { next = applyAction(state, 'host', action); } catch { return false; }
       if (next === state) return false;
       updateState(next);
       if (!send(connection, packet('state', { state: copy(state) }))) hostLostGuest(connection);
@@ -1641,6 +1208,12 @@ function createSession({
   };
 }
 
+return {isValidInvite,createSession};
+})();
+
+// src/invite.js
+__packsModules["invite"] = (() => {
+const { APP_VERSION } = __packsModules["version"];
 
 const HOST_PATTERN = /^ten-[a-f0-9]{32}$/;
 const SECRET_PATTERN = /^[a-f0-9]{32}$/;
@@ -1654,6 +1227,7 @@ function makeInviteLink(invite, pageUrl) {
   if (!validInvite(invite)) throw new Error('This invite is incomplete. Please create a new table.');
   const url = new URL(pageUrl);
   url.search = '';
+  url.searchParams.set('v', APP_VERSION);
   url.hash = new URLSearchParams({ host: invite.hostId, key: invite.secret }).toString();
   return url.href;
 }
@@ -1669,7 +1243,11 @@ function parseInviteLink(text, baseUrl) {
   return invite;
 }
 
+return {validInvite,makeInviteLink,parseInviteLink};
+})();
 
+// src/config.js
+__packsModules["config"] = (() => {
 // Optional deployment settings. Never put permanent TURN credentials in public code.
 // A production TURN service should issue short-lived credentials through a backend.
 const peerOptions = {
@@ -1682,40 +1260,69 @@ const peerOptions = {
 // Pinned for reproducibility. Copy the browser bundle into vendor/ to self-host it.
 const peerLibraryUrl = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js';
 
+return {peerOptions,peerLibraryUrl};
+})();
 
+// src/app.js
+__packsModules["app"] = (() => {
+const { createGame, applyAction, describeCard, otherPlayer, bidLabel, getActivePlayer } = __packsModules["game"];
+const { getPlayerView } = __packsModules["view"];
+const { createSession } = __packsModules["session"];
+const { makeInviteLink, parseInviteLink } = __packsModules["invite"];
+const { peerOptions, peerLibraryUrl } = __packsModules["config"];
+const { APP_VERSION } = __packsModules["version"];
 
-const $ = (id) => document.getElementById(id);
+const $ = id => document.getElementById(id);
 const localFile = location.protocol === 'file:';
+const suitNames = { S: 'spades', H: 'hearts', D: 'diamonds', C: 'clubs' };
+const suitSymbols = { S: '♠', H: '♥', D: '♦', C: '♣' };
 let mode = 'idle';
+let practiceRole = 'host';
 let state = createGame();
+let session = null;
 let phase = 'idle';
 let guestPresent = false;
 let inviteLink = '';
-let session = null;
 let busy = false;
-let pending = null;
+let pending = false;
+let operation = 0;
+let libraryPromise;
 let pendingTimer;
 let toastTimer;
-let libraryPromise;
-let cardsRenderKey = '';
-let operation = 0;
+let celebrationTimer;
+let lastCelebration = '';
+let selectedDiscards = new Set();
+let lastBidOptions = '';
 
+const playerName = role => role === 'host' ? 'Host' : 'Guest';
+const viewerRole = () => mode === 'practice' ? practiceRole : mode === 'guest' ? 'guest' : 'host';
+const gameReady = () => mode === 'practice' || phase === 'connected';
+const endedGame = view => view.phase === 'game_over' || view.phase === 'match_over';
+
+function announce(message) { $('connection-message').textContent = message; }
 function showError(message) {
   $('error-message').textContent = message;
   $('error-panel').hidden = false;
   $('error-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 function clearError() { $('error-panel').hidden = true; }
-function announce(message) { $('connection-message').textContent = message; }
 function toast(message) {
   clearTimeout(toastTimer);
   $('toast').textContent = message;
   $('toast').hidden = false;
   toastTimer = setTimeout(() => { $('toast').hidden = true; }, 3500);
 }
+function showCelebration(view) {
+  if (!view.result?.badge) return;
+  const key = `${view.gameNumber}:${view.result.badge}`;
+  if (key === lastCelebration) return;
+  lastCelebration = key;
+  clearTimeout(celebrationTimer);
+  $('celebration-text').textContent = view.result.badge;
+  $('celebration').hidden = false;
+  celebrationTimer = setTimeout(() => { $('celebration').hidden = true; }, 4500);
+}
 
-// Load the only external library only when someone requests a networked table.
-// Local practice works without that download or any signaling service.
 function loadPeer() {
   if (globalThis.Peer) return Promise.resolve(globalThis.Peer);
   if (libraryPromise) return libraryPromise;
@@ -1723,235 +1330,315 @@ function loadPeer() {
     const script = document.createElement('script');
     const timer = setTimeout(failed, 18000);
     function failed() {
-      clearTimeout(timer);
-      script.remove();
-      libraryPromise = null;
-      reject(new Error('The connection library could not load. Check your internet connection or try another network. Local practice is still available.'));
+      clearTimeout(timer); script.remove(); libraryPromise = null;
+      reject(new Error('The connection library could not load. Check your connection or try local practice.'));
     }
     script.src = peerLibraryUrl;
     script.crossOrigin = 'anonymous';
-    script.onload = () => {
-      clearTimeout(timer);
-      if (globalThis.Peer) resolve(globalThis.Peer);
-      else failed();
-    };
+    script.onload = () => { clearTimeout(timer); if (globalThis.Peer) resolve(globalThis.Peer); else failed(); };
     script.onerror = failed;
     document.head.append(script);
   });
   return libraryPromise;
 }
 
-function act(kind, cardId) {
-  if (mode === 'practice') {
-    state = kind === 'deal' ? dealCards(state) : selectCard(state, {
-      round: state.round, cardId, role: state.dealer === 'host' ? 'guest' : 'host',
-    });
-    announce(state.selectedCard
-      ? `Choice recorded. ${getNextDealer(state) === 'host' ? 'Host' : 'Guest'} deals next.`
-      : `${state.dealer === 'host' ? 'Host' : 'Guest'} dealt. Practice choosing for the other player.`);
-    render();
-    return;
-  }
-  const connected = phase === 'connected';
-  const hostWaiting = mode === 'host' && phase === 'waiting';
-  if (pending || !session || (!connected && !(kind === 'deal' && hostWaiting))) return;
-  if (kind === 'deal' ? !canDeal(state, mode) : !canSelect(state, mode)) return;
-  const revision = state.revision;
-  pending = kind;
-  render();
-  const accepted = kind === 'deal' ? session.deal() : session.select(cardId);
-  if (!accepted) {
-    pending = null;
-    render();
-    return;
-  }
-  // A host action is confirmed synchronously; a guest waits for shared state.
-  if (!pending) return;
-  announce(kind === 'deal' ? 'Dealing the next hand…' : 'Confirming your choice…');
+function acceptState(next) {
+  const changed = next.revision !== state.revision;
+  state = next;
+  pending = false;
   clearTimeout(pendingTimer);
-  pendingTimer = setTimeout(() => {
-    pending = null;
-    render();
-    if (state.revision === revision && phase === 'connected') announce('No confirmation yet. You can try that action again.');
-  }, 5000);
+  if (changed) selectedDiscards.clear();
+  if (!next.result) { clearTimeout(celebrationTimer); $('celebration').hidden = true; }
+  if (next.phase === 'lobby') lastCelebration = '';
+  if (mode === 'practice') practiceRole = getActivePlayer(state) || practiceRole;
+  render();
 }
 
-function renderCards() {
-  const selectable = (mode === 'practice' || (phase === 'connected' && canSelect(state, mode)))
-    && !pending && !state.selectedCard;
-  // Practice plays the chooser's side so one person can still try selection.
-  const viewer = mode === 'practice' ? (state.dealer === 'host' ? 'guest' : 'host') : mode;
-  const cards = state.cards.length ? getCardViews(state, viewer) : [];
-  const key = JSON.stringify([cards, selectable]);
-  if (cardsRenderKey === key) return;
-  cardsRenderKey = key;
-  const grid = $('cards-grid');
+function act(action) {
+  if (!gameReady() || pending) return false;
+  clearError();
+  if (mode === 'practice') {
+    const next = applyAction(state, practiceRole, action);
+    if (next === state) { showError('That action is not available on this turn.'); return false; }
+    acceptState(next);
+    return true;
+  }
+  const revision = state.revision;
+  pending = true;
+  render();
+  const accepted = session?.act(action);
+  if (!accepted) { pending = false; render(); return false; }
+  if (!pending) return true;
+  clearTimeout(pendingTimer);
+  pendingTimer = setTimeout(() => {
+    pending = false; render();
+    if (phase === 'connected' && state.revision === revision) announce('No confirmation yet. You can try that action again.');
+  }, 5000);
+  return true;
+}
+
+function chooseDiscard(cardId) {
+  const view = getPlayerView(state, viewerRole());
+  if (!gameReady() || pending || !view.legal.canDiscard) return;
+  if (selectedDiscards.has(cardId)) selectedDiscards.delete(cardId);
+  else if (selectedDiscards.size < 4) selectedDiscards.add(cardId);
+  else { toast('Choose exactly four cards. Unselect one to change your choice.'); return; }
+  render();
+}
+
+function cardNode(card, { enabled = false, selected = false, mini = false, onClick, label, stackIndex } = {}) {
+  if (!card || card.hidden) {
+    const node = document.createElement('div');
+    node.className = card ? 'card-back' : 'empty-card';
+    node.setAttribute('role', 'img');
+    node.setAttribute('aria-label', label || (card ? `Face-down card ${card.position || ''}`.trim() : 'Empty card space'));
+    if (!card) node.textContent = '—';
+    return node;
+  }
+  const node = document.createElement('button');
+  node.type = 'button';
+  node.className = `playing-card ${card.color}${mini ? ' mini' : ''}${enabled ? ' legal' : ''}${selected ? ' selected' : ''}`;
+  node.disabled = !enabled;
+  node.dataset.card = card.id;
+  if (stackIndex !== undefined) node.dataset.stack = String(stackIndex);
+  node.setAttribute('aria-label', `${label ? label + ': ' : ''}${card.name}${selected ? ', selected for discard' : ''}`);
+  node.setAttribute('aria-pressed', String(selected));
+  for (const corner of ['top', 'bottom']) {
+    const holder = document.createElement('span');
+    holder.className = `corner ${corner}`;
+    holder.setAttribute('aria-hidden', 'true');
+    const rank = document.createElement('span'); rank.textContent = card.rank;
+    const suit = document.createElement('span'); suit.className = 'suit'; suit.textContent = card.symbol;
+    holder.append(rank, suit); node.append(holder);
+  }
+  const pip = document.createElement('span'); pip.className = 'pip'; pip.textContent = card.symbol; pip.setAttribute('aria-hidden', 'true'); node.append(pip);
+  if (onClick && enabled) node.addEventListener('click', onClick);
+  return node;
+}
+
+function drawTable(id, stacks, own, view) {
+  const container = $(id);
+  container.replaceChildren();
+  for (const stack of stacks) {
+    const outer = document.createElement('div'); outer.className = 'stack';
+    const holder = document.createElement('div'); holder.className = 'stack-card';
+    if (stack.cards?.length) {
+      holder.classList.add('revealed-stack');
+      for (const card of stack.cards) holder.append(cardNode(card, { mini: true }));
+    } else {
+      const enabled = own && gameReady() && !pending && view.legal.tableStacks.includes(stack.index);
+      const content = stack.card || (stack.count ? { hidden: true } : null);
+      holder.append(cardNode(content, {
+        enabled, mini: true, stackIndex: enabled ? stack.index : undefined,
+        label: `Stack ${stack.index + 1}${stack.hidden ? ', face down' : ''}`,
+        onClick: () => act({ type: 'playTable', stackIndex: stack.index }),
+      }));
+    }
+    const caption = document.createElement('span'); caption.className = 'stack-caption'; caption.textContent = `STACK ${stack.index + 1} · ${stack.count} LEFT`;
+    outer.append(holder, caption); container.append(outer);
+  }
+}
+
+function renderPack(view) {
+  const pack = view.currentPack || (['pack_complete', 'game_over', 'match_over'].includes(view.phase) ? view.lastPack : null);
+  const leader = pack?.leader || view.contract?.bidder || otherPlayer(view.dealer);
+  const order = [leader, otherPlayer(leader), leader, otherPlayer(leader)];
+  $('pack-label').textContent = pack ? `PACK ${String(pack.number).padStart(2, '0')} OF 12` : 'THE FIRST PACK AWAITS';
+  $('pack-instruction').textContent = view.phase === 'pack_complete'
+    ? `${playerName(view.lastPack.winner)} won this pack and leads next.`
+    : endedGame(view) ? 'All remaining cards are now revealed.'
+      : pack?.ledSuit ? `${suitSymbols[pack.ledSuit]} ${suitNames[pack.ledSuit]} led · ${view.contract.mode} wins · ${suitSymbols[view.trump]} trump`
+        : view.phase === 'play' ? `${playerName(leader)} leads from their hand.` : 'The bid winner will lead.';
+  const container = $('pack-cards'); container.replaceChildren();
+  for (let i = 0; i < 4; i++) {
+    const slot = document.createElement('div'); slot.className = 'pack-slot';
+    const play = pack?.plays[i];
+    slot.append(cardNode(play?.card || null, { mini: true, label: play ? `${playerName(play.role)} played` : `Play ${i + 1}` }));
+    const label = document.createElement('small'); label.textContent = `${playerName(order[i])} · ${i < 2 ? 'hand' : 'table'}`;
+    slot.append(label); container.append(slot);
+  }
+}
+
+function renderHands(view) {
   const oldFocus = document.activeElement?.dataset.card;
-  grid.replaceChildren();
-  if (!state.cards.length) {
-    for (let i = 0; i < 10; i++) {
-      const back = document.createElement('div');
-      back.className = 'card-back';
-      back.setAttribute('aria-hidden', 'true');
-      grid.append(back);
-    }
-    return;
+  const own = $('own-hand'); own.replaceChildren();
+  const discarding = view.legal.canDiscard && gameReady() && !pending;
+  for (const card of view.hand) {
+    const enabled = gameReady() && !pending && (discarding || view.legal.handCards.includes(card.id));
+    own.append(cardNode(card, { enabled, selected: selectedDiscards.has(card.id),
+      onClick: () => discarding ? chooseDiscard(card.id) : act({ type: 'playHand', cardId: card.id }) }));
   }
-  for (const card of cards) {
-    if (!card.faceUp) {
-      const back = document.createElement('div');
-      back.className = 'card-back dealt-back';
-      back.setAttribute('role', 'img');
-      back.setAttribute('aria-label', `Face-down card ${card.position}`);
-      grid.append(back);
-      continue;
-    }
-    const { id, selected } = card;
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = `playing-card ${card.color}${selected ? ' selected' : ''}`;
-    button.disabled = !selectable;
-    button.dataset.card = id;
-    button.setAttribute('aria-label', `${card.name}${selected ? ', selected' : ''}`);
-    button.setAttribute('aria-pressed', String(selected));
-    for (const corner of ['top', 'bottom']) {
-      const label = document.createElement('span');
-      label.className = `card-corner ${corner}`;
-      label.setAttribute('aria-hidden', 'true');
-      const rank = document.createElement('span'); rank.textContent = card.rank;
-      const suit = document.createElement('span'); suit.className = 'suit'; suit.textContent = card.symbol;
-      label.append(rank, suit);
-      button.append(label);
-    }
-    const pip = document.createElement('span');
-    pip.className = 'card-pip';
-    pip.setAttribute('aria-hidden', 'true');
-    pip.textContent = card.symbol;
-    button.append(pip);
-    if (selected) {
-      const check = document.createElement('span');
-      check.className = 'card-check'; check.textContent = '✓'; check.setAttribute('aria-hidden', 'true');
-      button.append(check);
-    }
-    button.addEventListener('click', () => act('select', id));
-    grid.append(button);
+  $('hand-count').textContent = `${view.hand.length} CARDS`;
+  $('hand-title').textContent = endedGame(view) ? 'Your remaining cards.' : view.legal.canDiscard ? 'Choose four to discard.' : 'Your private hand.';
+  $('hand-eyebrow').textContent = endedGame(view) ? 'REVEALED AT GAME END' : mode === 'practice' ? `LOCAL PRACTICE · ${playerName(view.role).toUpperCase()}’S HAND` : 'VISIBLE ONLY TO YOU';
+  $('hand-instruction').textContent = endedGame(view) ? 'Both players can now inspect the unplayed cards.' : view.legal.canDiscard
+    ? 'Choose any four from your hand and the kitty below, then confirm.'
+    : view.legal.handCards.length ? 'Highlighted cards are legal. Follow the led suit whenever you have it.' : 'Your hand stays private. Wait for your hand-play turn.';
+  const opponent = $('opponent-hand'); opponent.replaceChildren();
+  opponent.classList.toggle('revealed', endedGame(view));
+  for (const card of view.opponentHand) opponent.append(cardNode(card, { mini: true, label: endedGame(view) ? undefined : 'Opponent’s private card' }));
+  $('opponent-hand-count').textContent = `${view.opponentHand.length} ${endedGame(view) ? 'revealed' : 'private'} cards`;
+  $('opponent-label').textContent = `${playerName(view.opponent).toUpperCase()}’S TABLE`;
+  $('own-table-label').textContent = `${playerName(view.role).toUpperCase()}’S TABLE · YOU`;
+  $('table-hint').textContent = endedGame(view) ? 'All remaining stack cards revealed' : ['play', 'pack_complete'].includes(view.phase) ? 'Only the exposed top cards can be played' : 'Face down until play begins';
+  drawTable('own-table', view.ownTable, true, view);
+  drawTable('opponent-table', view.opponentTable, false, view);
+  $('kitty-panel').hidden = !view.kitty.length;
+  const kitty = $('kitty-cards'); kitty.replaceChildren();
+  const kittyVisible = view.kitty.some(card => !card.hidden);
+  $('kitty-status').textContent = kittyVisible ? 'YOUR EXCHANGE' : 'FACE DOWN';
+  $('kitty-instruction').textContent = kittyVisible ? 'You may keep any or all of these four. Discard exactly four cards in total.' : view.phase === 'trump_before' ? 'The dealer must call trump before looking.' : 'Only the bid winner can inspect the kitty.';
+  for (const card of view.kitty) kitty.append(cardNode(card, { enabled: discarding && !card.hidden,
+    selected: Boolean(card.id && selectedDiscards.has(card.id)), onClick: () => chooseDiscard(card.id), label: card.hidden ? 'Face-down kitty card' : undefined }));
+  $('discard-panel').hidden = !endedGame(view) || !view.discards.length;
+  const discards = $('discard-cards'); discards.replaceChildren();
+  if (endedGame(view)) for (const card of view.discards) discards.append(cardNode(card, { mini: true }));
+  if (oldFocus) own.querySelector(`[data-card="${oldFocus}"]`)?.focus({ preventScroll: true });
+}
+
+function renderStage(view) {
+  const activeName = playerName(view.activePlayer || 'host');
+  const yours = view.activePlayer === view.role;
+  const label = { lobby: 'READY FOR A FIRST DEAL', auction: 'ONE BID EACH', trump_before: 'CALL BEFORE YOU LOOK', kitty: 'THE KITTY EXCHANGE', trump_after: 'NOW CALL TRUMP', play: 'FOUR CARDS MAKE A PACK', pack_complete: 'PACK COMPLETE', game_over: 'GAME COMPLETE', match_over: 'MATCH COMPLETE' };
+  $('stage-label').textContent = label[view.phase];
+  $('game-label').textContent = `GAME ${String(Math.max(1, view.gameNumber)).padStart(2, '0')}`;
+  let title = '', instruction = '';
+  if (mode === 'idle') {
+    title = 'Every game starts with a deal.'; instruction = 'Create a table and invite a friend, or explore both seats in local practice.';
+  } else if (!gameReady()) {
+    title = phase === 'ended' ? 'The table has closed.' : phase === 'waiting' ? 'A seat for your friend.' : 'Connecting your table…';
+    instruction = phase === 'ended' ? 'Start a new session to play again.' : phase === 'waiting' ? 'Share your invite. The game starts once both players are connected.' : 'Play is paused until both participants are connected.';
+  } else if (view.phase === 'lobby') {
+    title = yours ? 'Your turn to deal.' : 'The first deal is coming.';
+    instruction = 'Each player gets twelve hand cards and three stacks of four. Four cards form the kitty.';
+  } else if (view.phase === 'auction') {
+    title = yours ? 'Make your one bid.' : `${activeName} is considering a bid.`;
+    instruction = view.auction.entries.length === 0 ? 'The non-dealer opens. Bids run from 3-high to 8-low; low beats high only at the same number.'
+      : view.auction.entries[0].type === 'pass' ? 'The opening player passed. The dealer must lodge a bid.' : 'The dealer can bid strictly higher or pass. There is no further bidding.';
+  } else if (view.phase === 'trump_before') {
+    title = yours ? 'Call trump before the kitty.' : `${activeName} must call trump first.`;
+    instruction = 'The dealer won the auction and must choose the trump suit before seeing the kitty.';
+  } else if (view.phase === 'kitty') {
+    title = yours ? 'Keep twelve. Discard four.' : `${activeName} is inspecting the kitty.`;
+    instruction = yours ? 'Select exactly four cards from your hand and the kitty. Your table stacks are untouched.' : 'The bid winner’s exchange stays private until the game ends.';
+  } else if (view.phase === 'trump_after') {
+    title = yours ? 'Choose the trump suit.' : `${activeName} is calling trump.`;
+    instruction = 'The non-dealer has finished the kitty exchange. Call trump to reveal the table tops and begin.';
+  } else if (view.phase === 'play') {
+    const source = view.currentPack.plays.length < 2 ? 'hand' : 'table';
+    title = yours ? `Your ${source} play.` : `${activeName} plays from their ${source}.`;
+    instruction = view.currentPack.ledSuit ? `Follow ${suitNames[view.currentPack.ledSuit]} if available among your ${source === 'hand' ? 'hand cards' : 'exposed table cards'}. If you have none there, any suit is legal.` : 'The leader may play any hand card. Its suit is the led suit for all four plays.';
+  } else if (view.phase === 'pack_complete') {
+    title = `${playerName(view.lastPack.winner)} takes the pack.`;
+    instruction = 'Replacement table tops are now revealed. The pack winner leads the next pack.';
+  } else {
+    title = view.matchWinner ? `${playerName(view.matchWinner)} wins the match.` : `${playerName(view.result.winner)} wins this game.`;
+    instruction = view.matchWinner ? 'Seven or more games won. All remaining cards are revealed for a final look.' : 'All remaining cards and the four discards are revealed. The other player deals the next game.';
   }
-  if (oldFocus && selectable) grid.querySelector(`[data-card="${oldFocus}"]`)?.focus({ preventScroll: true });
+  $('stage-title').textContent = pending ? 'Confirming your move…' : title;
+  $('stage-instruction').textContent = instruction;
+  const history = $('auction-history'); history.replaceChildren();
+  for (const entry of view.auction.entries) {
+    const token = document.createElement('span'); token.className = 'bid-token'; token.textContent = `${playerName(entry.role)} · ${entry.type === 'bid' ? bidLabel(entry) : 'Pass'}`; history.append(token);
+  }
+  const auctionTurn = view.phase === 'auction' && yours;
+  $('bid-controls').hidden = !auctionTurn;
+  const optionsKey = JSON.stringify(view.legal.bids);
+  if (lastBidOptions !== optionsKey) {
+    lastBidOptions = optionsKey;
+    const previous = $('bid-select').value;
+    $('bid-select').replaceChildren();
+    for (const bid of view.legal.bids) {
+      const option = document.createElement('option'); option.value = `${bid.number}-${bid.mode}`; option.textContent = bidLabel(bid); $('bid-select').append(option);
+    }
+    $('bid-select').value = view.legal.bids.some(bid => `${bid.number}-${bid.mode}` === previous) ? previous
+      : view.legal.bids.length ? `${view.legal.bids[0].number}-${view.legal.bids[0].mode}` : '';
+  }
+  $('bid-select').disabled = !gameReady() || pending || !view.legal.canBid;
+  $('bid-button').disabled = !gameReady() || pending || !view.legal.canBid;
+  $('pass-button').hidden = !view.legal.canPass;
+  $('pass-button').disabled = !gameReady() || pending || !view.legal.canPass;
+  $('trump-controls').hidden = !view.legal.canCallTrump;
+  for (const suit of ['S', 'H', 'D', 'C']) $(`trump-${suit}`).disabled = !gameReady() || pending;
+  $('discard-controls').hidden = !view.legal.canDiscard;
+  $('discard-counter').textContent = `${selectedDiscards.size} of 4 selected`;
+  $('discard-button').disabled = !gameReady() || pending || selectedDiscards.size !== 4;
+  $('next-controls').hidden = !(view.legal.canDeal || view.legal.canContinue || view.legal.canNewMatch);
+  $('next-button').disabled = !gameReady() || pending;
+  $('next-button').textContent = view.legal.canContinue ? 'Lead the next pack →' : view.legal.canNewMatch ? 'Start a new match ↻'
+    : view.gameNumber ? `Deal game ${view.gameNumber + 1} ↻` : 'Deal the first game ↻';
+  $('result-panel').hidden = !view.result;
+  if (view.result) {
+    $('result-title').textContent = view.result.badge || `${playerName(view.result.winner)} wins`;
+    $('result-description').textContent = `${playerName(view.result.winner)} earns ${view.result.points} ${view.result.points === 1 ? 'game' : 'games'}. Packs: Host ${view.packs.host}, Guest ${view.packs.guest}. ${view.result.reason === 'target' ? 'The defender reached the target.' : 'All twelve packs were played.'}`;
+  }
+}
+
+function renderHistory(view) {
+  $('history-summary').textContent = `Completed packs · ${view.history.length}`;
+  const history = $('pack-history'); history.replaceChildren();
+  for (const pack of view.history) {
+    const row = document.createElement('div'); row.className = 'history-pack';
+    const cards = document.createElement('div'); cards.className = 'history-cards';
+    for (const play of pack.plays) cards.append(cardNode(describeCard(play.cardId), { mini: true, label: playerName(play.role) }));
+    const text = document.createElement('p'); text.textContent = `Pack ${pack.number} · ${playerName(pack.winner)} won · ${suitNames[pack.ledSuit]} led`;
+    row.append(cards, text); history.append(row);
+  }
+  const games = $('game-history'); games.replaceChildren();
+  for (const game of view.games) {
+    const row = document.createElement('p'); row.className = 'game-result'; row.textContent = `Game ${game.gameNumber}: ${playerName(game.winner)} +${game.points}${game.badge ? ' · ' + game.badge : ''} · ${bidLabel(game.bid)} · packs ${game.packs.host}–${game.packs.guest}`; games.append(row);
+  }
+  if (!view.games.length) { const empty = document.createElement('p'); empty.className = 'hint'; empty.textContent = 'Completed games will appear here.'; games.append(empty); }
 }
 
 function render() {
+  const role = viewerRole();
+  const view = getPlayerView(state, role);
   const active = mode !== 'idle';
-  const practice = mode === 'practice';
-  const host = mode === 'host';
-  const ended = phase === 'ended';
-  const connecting = phase === 'connecting';
-  const paused = phase === 'reconnecting';
-  const nextDealer = getNextDealer(state);
-  const chooser = state.dealer === 'host' ? 'guest' : 'host';
-  const myDeal = practice || canDeal(state, mode);
-  const myChoice = practice || canSelect(state, mode);
-  const dealerName = state.dealer === 'host' ? 'Host' : 'Guest';
-  const nextDealerName = nextDealer === 'host' ? 'Host' : 'Guest';
-  const chooserName = chooser === 'host' ? 'Host' : 'Guest';
-  const isDealer = mode === state.dealer;
-  const waitingForGuest = host && phase === 'waiting' && !guestPresent;
-  const roleHint = role => {
-    const identity = mode === role ? 'You' : 'Your friend';
-    const turn = state.selectedCard
-      ? (nextDealer === role ? 'Deal next' : 'Choose next')
-      : (state.dealer === role ? (state.round ? 'Dealt this hand' : 'First deal') : 'Choosing');
-    return `${identity} · ${turn}`;
-  };
+  $('build-label').textContent = `v${APP_VERSION}`;
   $('setup-panel').hidden = active;
   $('active-panel').hidden = !active;
   $('create-button').disabled = busy || localFile;
   $('join-button').disabled = busy || localFile;
-  $('practice-button').disabled = busy;
   $('join-input').disabled = busy || localFile;
+  $('practice-button').disabled = busy;
   $('create-button').textContent = busy ? 'Connecting…' : '＋ Create a table';
-  $('role-label').textContent = practice ? 'LOCAL PRACTICE' : host ? 'YOU ARE THE HOST' : 'YOU ARE THE GUEST';
-  $('session-title').textContent = ended ? 'Until next time.' : practice ? 'Practice both turns.' : connecting ? 'Opening your table…' : paused ? 'The game is paused.'
-    : waitingForGuest ? 'Waiting for your friend.' : state.selectedCard ? (myDeal ? 'Your turn to deal.' : 'Your friend deals next.')
-    : !state.round ? (myDeal ? 'Your turn to deal.' : 'Waiting for the first deal.')
-    : myChoice ? 'Your turn to choose.' : 'Your friend is choosing.';
-  $('host-seat-label').textContent = ended ? 'Disconnected' : practice ? 'You practice this side' : roleHint('host');
-  $('guest-seat-label').textContent = ended ? 'Not connected' : practice ? 'And this side, too' : host && !guestPresent ? 'Waiting for a friend' : roleHint('guest');
-  $('host-dot').className = `seat-dot${!ended && !connecting && active ? ' online' : ''}`;
-  $('guest-dot').className = `seat-dot${!ended && (practice || guestPresent || (mode === 'guest' && phase === 'connected')) ? ' online' : ''}`;
-  $('host-dot').setAttribute('aria-label', $('host-dot').classList.contains('online') ? 'Present' : 'Not connected');
-  $('guest-dot').setAttribute('aria-label', $('guest-dot').classList.contains('online') ? 'Present' : 'Not connected');
-  $('invite-section').hidden = !host || !inviteLink || ended;
+  $('role-label').textContent = mode === 'practice' ? `LOCAL PRACTICE · ${playerName(role).toUpperCase()} VIEW` : `YOU ARE THE ${playerName(role).toUpperCase()}`;
+  $('session-title').textContent = mode === 'practice' ? 'Try both sides.' : phase === 'ended' ? 'Until next time.' : 'Your shared table.';
+  $('practice-controls').hidden = mode !== 'practice';
+  $('switch-seat').textContent = `View as ${playerName(otherPlayer(role))}`;
+  $('invite-section').hidden = mode !== 'host' || !inviteLink || phase === 'ended';
   $('invite-output').value = inviteLink;
-  $('deal-button').hidden = !myDeal;
-  $('deal-button').disabled = ended || pending !== null || !(phase === 'connected' || (host && phase === 'waiting'));
-  $('deal-button').textContent = pending === 'deal' ? 'Dealing…' : state.selectedCard ? 'Deal next hand ↻' : state.round ? 'Deal again ↻' : 'Deal ten cards ↻';
-  $('leave-button').textContent = ended ? 'Back to start' : practice ? 'Exit practice' : host ? 'End game' : 'Leave table';
-  let guidance;
-  if (ended) guidance = 'This session has ended. Start a fresh table to play again.';
-  else if (connecting) guidance = host ? 'Preparing your invite link. Keep this page open.' : 'Connecting to your host. Keep this page open.';
-  else if (paused) guidance = 'The connection was interrupted. Wait for it to recover before dealing or choosing.';
-  else if (practice) guidance = 'Practice shows the chooser’s view. In a two-player game, the dealer sees card backs until a choice reveals one.';
-  else if (waitingForGuest) guidance = !state.round ? 'Invite your friend. You can deal the first hand while you wait.' : 'Waiting for your friend to join. Their place in the current hand is saved.';
-  else if (state.selectedCard) guidance = myDeal ? 'Your choice is recorded. Deal the next hand for your friend.' : 'Your friend can now deal the next hand for you.';
-  else if (myChoice) guidance = 'Choose one card. Then you can deal the next hand.';
-  else if (state.round) guidance = 'Your friend sees the card faces. Your cards stay face down until their choice reveals one.';
-  else guidance = myDeal ? 'Deal ten cards for your friend to choose from.' : 'Your friend will deal the first hand. The cards will appear here.';
-  if (host && !ended && !connecting) guidance += ' Keep this page open to keep the game going.';
-  $('session-guidance').textContent = guidance;
-  $('round-label').textContent = state.round ? `DEAL ${String(state.round).padStart(2, '0')} · 10 CARDS` : 'YOUR SHARED TABLE';
-  $('status-pill').dataset.phase = phase;
-  const labels = { idle: 'Not connected', connecting: 'Connecting…', waiting: 'Waiting for guest', connected: practice ? 'Local practice' : 'Connected · 2 of 2', reconnecting: 'Connection interrupted', ended: 'Session ended' };
+  $('session-guidance').textContent = mode === 'practice' ? 'This rehearsal stays on your device. Each move switches to the active seat.' : mode === 'host' ? 'Keep this page open. Closing or refreshing it ends the session.' : 'The original host keeps the game running. Your hand is private on screen.';
+  $('leave-button').textContent = phase === 'ended' ? 'Back to start' : mode === 'practice' ? 'Exit practice' : mode === 'host' ? 'End session' : 'Leave table';
+  $('host-name').textContent = `Host${role === 'host' && active ? ' · you' : ''}`;
+  $('guest-name').textContent = `Guest${role === 'guest' && active ? ' · you' : ''}`;
+  $('host-score').textContent = String(view.scores.host);
+  $('guest-score').textContent = String(view.scores.guest);
+  $('dealer-label').textContent = view.phase === 'game_over' ? `${playerName(otherPlayer(view.dealer))} deals next` : `${playerName(view.dealer)} ${view.gameNumber ? 'dealt this game' : 'deals first'}`;
+  $('contract-label').textContent = view.contract ? `${playerName(view.contract.bidder)} · ${bidLabel(view.contract)}` : 'A fresh possibility.';
+  $('trump-label').textContent = view.trump ? `${suitSymbols[view.trump]} ${suitNames[view.trump]} is trump · ${view.contract.mode} wins` : 'Trump is not called yet.';
+  $('host-packs').textContent = String(view.packs.host); $('guest-packs').textContent = String(view.packs.guest);
+  $('target-section').hidden = !view.contract;
+  if (view.contract) {
+    const count = view.packs[view.contract.defender];
+    $('defender-label').textContent = `${playerName(view.contract.defender)} needs`;
+    $('target-count').textContent = `${count} / ${view.contract.target} packs`;
+    $('target-progress').max = view.contract.target; $('target-progress').value = count;
+    $('target-description').textContent = `${playerName(view.contract.bidder)} must keep the defender below ${view.contract.target}.`;
+  }
+  $('status-dot').dataset.phase = phase;
+  const labels = { idle: 'Not connected', connecting: 'Connecting…', waiting: 'Waiting for guest', connected: mode === 'practice' ? 'Local practice · one device' : 'Connected · 2 of 2', reconnecting: 'Connection interrupted', ended: 'Session ended' };
   $('status-label').textContent = labels[phase] || 'Not connected';
-  $('felt').classList.toggle('empty', !state.cards.length);
-  $('felt').classList.toggle('ended', ended);
-  $('table-empty').hidden = Boolean(state.cards.length);
-  $('cards-grid').setAttribute('aria-label', !state.cards.length ? 'Waiting for ten cards'
-    : isDealer ? (state.selectedCard ? 'One selected card revealed; nine cards face down' : 'Ten face-down cards')
-      : 'Ten face-up cards');
-  $('empty-title').textContent = ended ? 'The table is closed.' : connecting ? 'Connecting your table…' : mode === 'guest' ? 'Take a little seat.' : active ? 'Your table is ready.' : 'Ready when you are.';
-  $('empty-copy').textContent = ended ? 'Start a new game for a fresh deal.' : connecting
-    ? (host ? 'Setting up your invite link. Please wait.' : 'Waiting for your host to accept the connection.')
-    : mode === 'guest' ? 'The cards will appear when your host deals.' : active ? 'Deal ten cards to get things going.' : 'Create a table to deal your first ten cards.';
-  $('felt-label').textContent = `${practice ? 'PRACTICE · ' : ''}${dealerName.toUpperCase()} DEALS · ${chooserName.toUpperCase()} CHOOSES`;
-  $('table-instruction').textContent = ended ? 'This game has ended.' : paused ? 'Connection interrupted. The game is paused.' : pending ? (pending === 'deal' ? 'Dealing the next hand…' : 'Confirming your choice…')
-    : waitingForGuest && state.round ? 'Waiting for your friend to join the table.'
-    : state.selectedCard ? (practice ? `${nextDealerName} deals next. You can play that side, too.` : myDeal ? 'Your turn to deal the next hand.' : `${nextDealerName} can now deal the next hand for you.`) : state.cards.length
-    ? (myChoice ? 'Pick the card that catches your eye.' : 'Your friend’s choice will reveal one card here.')
-    : 'A full deck. A fresh deal. A shared moment.';
-  $('selection-copy').textContent = state.selectedCard
-    ? `Selected: ${describeCard(state.selectedCard).name}.`
-    : state.round ? (waitingForGuest ? 'Waiting for your friend to join.' : myChoice ? 'Which one will it be?' : `Waiting for the ${chooser}'s choice.`) : 'Every good choice starts with a deal.';
-  $('selection-tag').textContent = `${nextDealerName.toUpperCase()} DEALS NEXT`;
-  $('selection-tag').hidden = !state.selectedCard;
-  renderCards();
+  renderStage(view); renderPack(view); renderHands(view); renderHistory(view); showCelebration(view);
 }
 
 function newSession(Peer, currentOperation) {
   const current = () => operation === currentOperation;
-  return createSession({
-    Peer, peerOptions,
-    onStatus(status) {
-      if (!current()) return;
-      phase = status.phase;
-      if (phase !== 'connected') { pending = null; clearTimeout(pendingTimer); }
-      announce(status.message);
-      render();
-    },
-    onState(next) {
-      if (!current()) return;
-      const previousRound = state.round;
-      state = next; pending = null; clearTimeout(pendingTimer);
-      if (next.selectedCard) announce(getNextDealer(next) === mode
-        ? 'Choice recorded. You can now deal the next hand.' : 'Choice recorded. Your friend can deal next.');
-      else if (next.round > previousRound) announce(canSelect(next, mode)
-        ? 'Ten new cards. It’s your turn to choose.' : 'Your hand is dealt. Your friend can choose a card.');
-      render();
-    },
-    onInvite(invite) {
-      if (!current()) return;
-      inviteLink = makeInviteLink(invite, location.href);
-      render();
-    },
+  return createSession({ Peer, peerOptions,
+    onStatus(status) { if (!current()) return; phase = status.phase; if (phase !== 'connected') { pending = false; clearTimeout(pendingTimer); } announce(status.message); render(); },
+    onState(next) { if (current()) acceptState(next); },
+    onInvite(invite) { if (current()) { inviteLink = makeInviteLink(invite, location.href); render(); } },
     onGuest(present) { if (current()) { guestPresent = present; render(); } },
     onError(message) { if (current()) showError(typeof message === 'string' ? message : message.message); },
   });
@@ -1959,113 +1646,73 @@ function newSession(Peer, currentOperation) {
 
 async function startNetwork(role, invite) {
   if (busy || mode !== 'idle') return;
-  clearError();
-  busy = true;
-  phase = 'connecting';
-  announce('Preparing your browser connection…');
-  const currentOperation = ++operation;
-  render();
+  clearError(); busy = true; phase = 'connecting'; announce('Preparing the browser connection…');
+  const currentOperation = ++operation; render();
   try {
-    if (!globalThis.RTCPeerConnection) throw new Error('This browser does not support WebRTC. Please use a current browser, or try local practice.');
+    if (!globalThis.RTCPeerConnection) throw new Error('This browser does not support WebRTC. Use a current browser or try local practice.');
     const Peer = await loadPeer();
     if (operation !== currentOperation) return;
-    mode = role;
-    session = newSession(Peer, currentOperation);
-    render();
-    if (role === 'host') await session.host();
-    else await session.join(invite);
+    mode = role; session = newSession(Peer, currentOperation); render();
+    if (role === 'host') await session.host(); else await session.join(invite);
   } catch (error) {
     if (operation !== currentOperation) return;
-    // Invalidate callbacks before closing so a failed start returns to a usable form.
     operation++;
-    try { session?.close(); } catch { /* A cleanup failure must not hide the original error. */ }
-    session = null;
-    mode = 'idle'; phase = 'idle';
-    inviteLink = ''; guestPresent = false; state = createGame();
-    showError(error.message || 'The connection failed. Please try again.');
-    announce('The table could not connect. You can retry or try local practice.');
-  } finally {
-    busy = false;
-    render();
-  }
+    try { session?.close(); } catch { /* Preserve the original startup error. */ }
+    session = null; mode = 'idle'; phase = 'idle'; state = createGame(); inviteLink = ''; guestPresent = false;
+    showError(error.message || 'The table could not connect.'); announce('You can retry or explore local practice.');
+  } finally { busy = false; render(); }
 }
 
 function reset() {
   operation++;
-  session?.close();
-  session = null;
-  mode = 'idle'; phase = 'idle'; state = createGame();
-  inviteLink = ''; guestPresent = false; pending = null; busy = false;
-  clearTimeout(pendingTimer);
+  try { session?.close(); } catch { /* Reset remains available after transport errors. */ }
+  session = null; mode = 'idle'; phase = 'idle'; state = createGame(); inviteLink = ''; guestPresent = false; pending = false; busy = false; selectedDiscards.clear();
+  clearTimeout(pendingTimer); clearTimeout(celebrationTimer); $('celebration').hidden = true; lastCelebration = '';
   clearError();
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-  $('join-input').value = '';
-  announce('Create a table, or use an invite link to join one.');
-  render();
+  $('join-input').value = ''; announce('Create a table, or try a local rehearsal.'); render();
 }
 
 $('create-button').addEventListener('click', () => startNetwork('host'));
-$('join-form').addEventListener('submit', (event) => {
-  event.preventDefault();
-  try {
-    const invite = parseInviteLink($('join-input').value, location.href);
-    startNetwork('guest', invite);
-  } catch (error) { showError(error.message); }
-});
+$('join-form').addEventListener('submit', event => { event.preventDefault(); try { startNetwork('guest', parseInviteLink($('join-input').value, location.href)); } catch (error) { showError(error.message); } });
 $('practice-button').addEventListener('click', () => {
-  clearError();
-  mode = 'practice'; phase = 'connected';
-  state = dealCards(createGame());
-  announce('Local practice: you control both the deal and the choice. No one else is connected.');
-  render();
+  clearError(); mode = 'practice'; phase = 'connected'; practiceRole = 'host'; state = createGame(); lastCelebration = ''; selectedDiscards.clear();
+  announce('Local rehearsal: you control both players. Each turn shows the active player’s view.');
+  act({ type: 'deal' });
 });
-$('deal-button').addEventListener('click', () => act('deal'));
-$('leave-button').addEventListener('click', () => {
-  if (phase === 'ended' || mode === 'practice') reset();
-  else session?.close();
+$('switch-seat').addEventListener('click', () => { practiceRole = otherPlayer(practiceRole); selectedDiscards.clear(); render(); });
+$('bid-button').addEventListener('click', () => { const [number, bidMode] = $('bid-select').value.split('-'); act({ type: 'bid', number: Number(number), mode: bidMode }); });
+$('pass-button').addEventListener('click', () => act({ type: 'pass' }));
+for (const suit of ['S', 'H', 'D', 'C']) $(`trump-${suit}`).addEventListener('click', () => act({ type: 'trump', suit }));
+$('discard-button').addEventListener('click', () => act({ type: 'discard', cards: [...selectedDiscards] }));
+$('next-button').addEventListener('click', () => {
+  const legal = getPlayerView(state, viewerRole()).legal;
+  act({ type: legal.canContinue ? 'continue' : legal.canNewMatch ? 'newMatch' : 'deal' });
 });
+$('leave-button').addEventListener('click', () => { if (mode === 'practice' || phase === 'ended') reset(); else session?.close(); });
 $('copy-button').addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(inviteLink);
-    toast('Invite link copied. Send it to a friend.');
-  } catch {
-    $('invite-output').focus(); $('invite-output').select();
-    toast('Select and copy the invite link above.');
-  }
+  try { await navigator.clipboard.writeText(inviteLink); toast('Invite copied. Send it to your friend.'); }
+  catch { $('invite-output').focus(); $('invite-output').select(); toast('Select and copy the invite link above.'); }
 });
-$('help-toggle').addEventListener('click', () => {
-  const expanded = $('help-toggle').getAttribute('aria-expanded') === 'true';
-  $('help-toggle').setAttribute('aria-expanded', String(!expanded));
-  $('how-to-play').hidden = expanded;
-});
+$('help-toggle').addEventListener('click', () => { const expanded = $('help-toggle').getAttribute('aria-expanded') === 'true'; $('help-toggle').setAttribute('aria-expanded', String(!expanded)); $('how-to-play').hidden = expanded; });
 $('dismiss-error').addEventListener('click', clearError);
 window.addEventListener('pagehide', () => { session?.close(); });
-window.addEventListener('pageshow', (event) => {
-  if (event.persisted && session) {
-    phase = 'ended';
-    announce('This session ended when you left the page. Start a fresh table to play again.');
-    render();
-  }
-});
-
+window.addEventListener('pageshow', event => { if (event.persisted && session) { phase = 'ended'; announce('This session ended when you left. Start a new table.'); render(); } });
 if (location.hash) {
-  try {
-    parseInviteLink(location.href);
-    $('join-input').value = location.href;
-    $('join-hint').textContent = 'Your invitation is ready. Click Join table.';
-    announce('You’ve been invited. Join the table when you’re ready.');
-  } catch (error) { showError(error.message); }
+  try { parseInviteLink(location.href); $('join-input').value = location.href; $('join-hint').textContent = 'Your invitation is ready. Click Join table.'; announce('You’ve been invited. Join when you’re ready.'); }
+  catch (error) { showError(error.message); }
 }
 if (localFile) {
-  $('join-hint').textContent = 'Publish the website to enable invitations.';
-  $('join-input').disabled = true;
-  $('create-button').title = 'Run a local web server or publish with GitHub Pages to create a networked table.';
-  $('join-button').title = 'Run a local web server or publish with GitHub Pages to join a networked table.';
+  $('join-hint').textContent = 'Publish the homepage to use invitations.';
   document.querySelector('.brand').href = location.href.split('#')[0];
-  announce('Local file preview. Choose “Try it on this device” to explore the cards. Publish to invite a friend.');
+  announce('Local file: choose “Try both seats on this device” to explore the complete game.');
+} else {
+  const home = new URL('./', location.href); home.searchParams.set('v', APP_VERSION); document.querySelector('.brand').href = home.href;
 }
 render();
 
+return {};
+})();
 })();
 </script>
 </body>

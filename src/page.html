@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173f35">
+  <meta name="description" content="A private table for two: bid, exchange the kitty, and play twelve four-card packs. First to seven wins.">
+  <meta name="referrer" content="no-referrer">
+  <title>Packs — A table for two</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./src/app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Packs home"><span class="brand-mark" aria-hidden="true">♠</span><span>Packs<small>A TABLE FOR TWO</small></span></a>
+      <button class="text-button" id="help-toggle" aria-expanded="false" aria-controls="how-to-play">How to play ↗</button>
+    </header>
+    <section class="help-panel" id="how-to-play" hidden>
+      <h2>A little strategy. A shared table.</h2>
+      <ol>
+        <li>Each player gets a private hand of twelve cards and three face-down stacks of four. Four more cards make the kitty.</li>
+        <li>The non-dealer bids first. Each player gets one bid or pass; the dealer must bid after an opening pass. Equal numbers rank low above high.</li>
+        <li>The bid winner exchanges the kitty and calls trump. A dealer calls before seeing the kitty; a non-dealer calls after discarding four.</li>
+        <li>A pack has four plays: leader’s hand, follower’s hand, leader’s table, follower’s table. Follow the original suit whenever possible, separately within your hand or exposed table cards.</li>
+        <li>Trump beats other suits. High ranks A–K–Q…2; low ranks A–2–3…K. The strongest single qualifying card wins the pack and the next lead.</li>
+        <li>The defender needs 8 minus the bid, with a minimum of one pack. Otherwise play all twelve packs. BOLO and REVERSE BOLO score two games; other wins score one. First to seven or more wins.</li>
+      </ol>
+      <p>The original host keeps this page open. Hidden cards are concealed in the interface for this trusted-player prototype.</p>
+    </section>
+    <main>
+      <section class="intro"><div><p class="eyebrow">A DECK. A BID. A LITTLE NERVE.</p><h1>Take your seat.</h1></div><p>Twelve packs to play.<br>Seven games to win.</p></section>
+      <div class="workspace">
+        <aside class="sidebar">
+          <section class="panel" id="setup-panel">
+            <p class="eyebrow">OPEN A TABLE</p><h2>A seat for a friend.</h2><p class="muted">One person hosts. The other joins with an invite link.</p>
+            <button class="button primary" id="create-button">＋ Create a table</button>
+            <div class="divider">or join a friend</div>
+            <form id="join-form"><label for="join-input">Invite link</label><input id="join-input" placeholder="Paste their invite link" autocomplete="off" spellcheck="false"><button class="button secondary" id="join-button" type="submit">Join table ↗</button><p class="hint" id="join-hint">You’ll join as the guest.</p></form>
+            <button class="practice-link" id="practice-button">Try both seats on this device →</button>
+          </section>
+          <section class="panel" id="active-panel" hidden>
+            <p class="eyebrow" id="role-label">YOUR SEAT</p><h2 id="session-title">Your shared table.</h2>
+            <div id="invite-section" hidden><label for="invite-output">Your invite link</label><input id="invite-output" readonly spellcheck="false"><button class="button secondary" id="copy-button">Copy invite link ↗</button></div>
+            <div class="practice-controls" id="practice-controls" hidden><p>Local rehearsal: you control both seats. The view follows the active player.</p><button class="button secondary" id="switch-seat">View the other seat</button></div>
+            <p class="hint" id="session-guidance">The original host keeps the session open.</p>
+            <button class="text-button leave" id="leave-button">Leave table</button>
+          </section>
+          <section class="panel score-panel" aria-label="Match score"><p class="eyebrow">FIRST TO SEVEN</p><div class="score-row"><span id="host-name">Host</span><strong id="host-score">0</strong></div><div class="score-row"><span id="guest-name">Guest</span><strong id="guest-score">0</strong></div><p class="hint" id="dealer-label">Host deals first</p></section>
+          <section class="panel contract-panel"><p class="eyebrow">THE CONTRACT</p><h3 id="contract-label">A fresh possibility.</h3><p id="trump-label" class="muted">Trump is not called yet.</p><div id="target-section" hidden><div class="target-line"><span id="defender-label">Defender</span><strong id="target-count">0 / 5</strong></div><progress id="target-progress" max="5" value="0" aria-label="Defender’s progress"></progress><p id="target-description" class="hint"></p></div><div class="pack-counts"><span>Host packs <b id="host-packs">0</b></span><span>Guest packs <b id="guest-packs">0</b></span></div></section>
+          <div class="connection-status"><span class="status-dot" id="status-dot"></span><span id="status-label">Not connected</span></div>
+          <p id="connection-message" class="connection-message" role="status" aria-live="polite">Create a table, or try a local rehearsal.</p>
+          <div class="error-panel" id="error-panel" role="alert" hidden><span id="error-message"></span><button class="text-button" id="dismiss-error" aria-label="Dismiss error">×</button></div>
+        </aside>
+        <div class="board-column">
+          <section class="phase-panel" aria-live="polite" aria-atomic="false">
+            <div class="phase-heading"><div><p class="eyebrow" id="stage-label">WELCOME TO THE TABLE</p><h2 id="stage-title">Every game starts with a deal.</h2></div><span class="phase-chip" id="game-label">GAME 01</span></div>
+            <p id="stage-instruction">Create a table and invite a friend, or explore both seats in local practice.</p>
+            <div id="auction-history" class="auction-history"></div>
+            <div id="bid-controls" class="action-row" hidden><label for="bid-select">Your one bid</label><select id="bid-select" aria-label="Choose a bid"></select><button class="button primary" id="bid-button">Place bid</button><button class="button secondary" id="pass-button">Pass</button></div>
+            <div id="trump-controls" class="trump-controls" hidden><button class="suit-button" id="trump-S" data-suit="S" aria-label="Call spades trump">♠ <span>Spades</span></button><button class="suit-button red" id="trump-H" data-suit="H" aria-label="Call hearts trump">♥ <span>Hearts</span></button><button class="suit-button red" id="trump-D" data-suit="D" aria-label="Call diamonds trump">♦ <span>Diamonds</span></button><button class="suit-button" id="trump-C" data-suit="C" aria-label="Call clubs trump">♣ <span>Clubs</span></button></div>
+            <div id="discard-controls" class="action-row" hidden><span id="discard-counter">0 of 4 selected</span><button class="button primary" id="discard-button">Discard four cards</button></div>
+            <div id="next-controls" class="action-row" hidden><button class="button primary" id="next-button">Deal the first game</button></div>
+            <div id="result-panel" class="result-panel" hidden><strong id="result-title"></strong><p id="result-description"></p></div>
+          </section>
+          <section class="felt" aria-label="Card table">
+            <div class="table-zone opponent-zone"><div class="zone-heading"><span id="opponent-label">GUEST’S TABLE</span><span id="opponent-hand-count">12 private cards</span></div><div class="opponent-hand" id="opponent-hand" aria-label="Opponent’s hand"></div><div class="stacks" id="opponent-table" aria-label="Opponent’s three table stacks"></div></div>
+            <section class="pack-zone"><div class="pack-heading"><span class="rule"></span><span id="pack-label">THE FIRST PACK AWAITS</span><span class="rule"></span></div><p id="pack-instruction">The bid winner will lead.</p><div class="pack-cards" id="pack-cards" aria-label="Cards played in the current pack"></div></section>
+            <div class="table-zone own-zone"><div class="zone-heading"><span id="own-table-label">YOUR TABLE</span><span id="table-hint">Three stacks of four</span></div><div class="stacks" id="own-table" aria-label="Your three table stacks"></div></div>
+          </section>
+          <section class="hand-panel"><div class="section-heading"><div><p class="eyebrow" id="hand-eyebrow">YOUR PRIVATE HAND</p><h2 id="hand-title">Twelve cards. Your call.</h2></div><span id="hand-count" class="count-chip">12 CARDS</span></div><p class="hint" id="hand-instruction">Only you see these card faces during play.</p><div class="hand-grid" id="own-hand" aria-label="Your hand"></div></section>
+          <section class="hand-panel kitty-panel" id="kitty-panel" hidden><div class="section-heading"><div><p class="eyebrow">FOUR MORE POSSIBILITIES</p><h2>The kitty.</h2></div><span id="kitty-status" class="count-chip">PRIVATE</span></div><p id="kitty-instruction" class="hint"></p><div class="kitty-grid" id="kitty-cards" aria-label="The kitty"></div></section>
+          <section class="hand-panel" id="discard-panel" hidden><p class="eyebrow">THE FOUR DISCARDS</p><div class="kitty-grid" id="discard-cards" aria-label="Revealed discards"></div></section>
+          <details class="history-panel" id="history-panel"><summary id="history-summary">Completed packs · 0</summary><div id="pack-history"></div></details>
+          <details class="history-panel" id="games-panel"><summary>Match results</summary><div id="game-history"></div></details>
+        </div>
+      </div>
+    </main>
+    <footer class="site-footer"><span>Made for a little connection. <small id="build-label">Loading game…</small></span><span>2 PLAYERS · 12 PACKS · FIRST TO 7</span></footer>
+  </div>
+  <div class="celebration" id="celebration" role="status" aria-live="assertive" hidden><span id="celebration-text">BOLO</span></div>
+  <div class="toast" id="toast" role="status" hidden>Invite copied.</div>
+  <noscript><p class="noscript">Please enable JavaScript to play.</p></noscript>
+</body>
+</html>

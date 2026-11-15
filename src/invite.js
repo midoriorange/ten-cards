@@ -1,3 +1,5 @@
+import { APP_VERSION } from './version.js';
+
 const HOST_PATTERN = /^ten-[a-f0-9]{32}$/;
 const SECRET_PATTERN = /^[a-f0-9]{32}$/;
 
@@ -10,6 +12,7 @@ export function makeInviteLink(invite, pageUrl) {
   if (!validInvite(invite)) throw new Error('This invite is incomplete. Please create a new table.');
   const url = new URL(pageUrl);
   url.search = '';
+  url.searchParams.set('v', APP_VERSION);
   url.hash = new URLSearchParams({ host: invite.hostId, key: invite.secret }).toString();
   return url.href;
 }

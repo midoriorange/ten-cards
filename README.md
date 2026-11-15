@@ -1,148 +1,232 @@
-# Ten Cards
+# Packs — a table for two
 
-A small, open-source card table for two people. One browser hosts the game, another joins through an invite link, and both display the same ten cards.
+An open-source, two-player card game using the custom childhood rules agreed in
+this conversation. One browser hosts the session; another joins by invite link.
+The host keeps the authoritative state and validates every move. Both players
+see their own private hands and the shared table.
 
-This project runs locally or on GitHub Pages. To update an existing site, replace the changed files in its repository and wait for Pages to deploy.
+**Release: v0.4.0.** This replaces the earlier ten-card selection demo. The GitHub
+repository and Pages address can keep their existing `ten-cards` name.
 
-## The rules
+## Try it without installing anything
 
-- One host and one guest.
-- The host deals the first ten distinct cards from a fresh standard 52-card deck, with no jokers.
-- The chooser sees ten face-up cards; the dealer sees ten face-down cards.
-- The guest selects one card. That card is revealed to the dealer in its original position; the other nine stay face down. Both screens show the accepted choice.
-- The guest can then click **Deal next hand** to deal ten cards for the host to choose from.
-- After each choice, the chooser gets the next deal. This repeats in the same room, using the same invite link.
-- There is one choice per deal. A fresh deal clears the selection and turns all ten cards face down for the new dealer. Before a selection, the current dealer may re-deal without changing whose turn it is.
-- The host can deal before the guest joins; the guest receives the current game when connecting.
-- A disconnected guest can be replaced while the host keeps the game open.
-- Closing, refreshing, or leaving the host's page ends that session. Connection loss takes a short time to detect.
+Extract this download and open `START_HERE.html` or `index.html` in your browser.
+Choose **Try both seats on this device**. This rehearsal controls both players
+and automatically shows the active player's seat. **View as Host/Guest** lets
+you inspect the other perspective. The rehearsal does not connect to anyone.
 
-## First look: no installation
+For a networked game, publish the homepage using GitHub Pages, or run the local
+server. Browser-file invitations are disabled because another person cannot
+open your computer's file path.
 
-Open **`START_HERE.html`** from the extracted folder in your browser, then choose
-**Just exploring? Try it on this device**. This single-file edition lets you deal
-and select cards immediately using the chooser's face-up view. When opened as a local file, network-game controls
-are disabled; use the local web server or GitHub Pages for invite links.
+## Update your existing GitHub Pages website
 
-`START_HERE.html` is generated from the same application source. Regenerate it
-after code changes with `npm run standalone`.
+1. On your repository's main **Code** page, choose **Add file → Upload files**.
+2. Upload the **top-level `index.html`** from this download, replacing the old
+   homepage. It contains the current application, stylesheet, and icon, so this
+   is the only file needed to update the running website.
+3. Commit to your publishing branch and wait for the Pages deployment to finish
+   successfully under **Actions**.
+4. Both players should open the updated website, refresh, and confirm **v0.4.0**
+   in the footer. Start a new table and use its new invite link.
 
-## Run the full website on your computer
+Existing sessions use a different message format and cannot be carried into
+this version. Invite links include the release version so new guests request
+the same page version. If you also keep the editable source on GitHub, upload
+this project's source, tests, scripts, and documentation too, preserving their
+folders. Leave `.github/` out if you use the simple branch publication route.
 
-1. Install [Node.js](https://nodejs.org/) version 20 or newer if it is not already installed.
-2. Extract the project and open a terminal in the folder containing `package.json`.
-3. Run:
+To publish for the first time, create a public GitHub repository and put this
+project's contents at its root. Under **Settings → Pages**, select **Deploy from
+a branch**, `main`, and `/(root)`. You do not need to install Node or run a build
+because the downloaded homepage is already generated.
 
-   ```sh
-   npm start
-   ```
+[GitHub Pages setup](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site)
 
-4. Open the address printed in the terminal.
+## Play with a friend
 
-There are no npm dependencies to install. Use the local web server rather than opening the development `index.html` directly: that version uses JavaScript modules.
+1. The original host opens the website and clicks **Create a table**.
+2. Copy the invite link and send it to the guest. The guest opens it and clicks
+   **Join table**. Wait for **Connected · 2 of 2**.
+3. The host clicks **Deal the first game**. Bidding starts with the guest.
+4. Follow the stage panel through the auction, trump call, and kitty exchange.
+   The panel explains whose turn it is. Enabled cards are legal choices.
+5. After a completed pack, its winner clicks **Lead the next pack**. This pause
+   lets both players inspect the four played cards and newly revealed table tops.
+6. At game end, inspect all remaining cards and the discards. The next dealer
+   clicks **Deal game …**. Scores remain in the same session.
+7. First to seven or more wins the match. The original host can start a new match.
 
-For a first look, choose **Just exploring? Try it on this device**. This local practice mode lets you deal and select cards without another person or external service.
+Keep the original host's page open. Closing or refreshing it ends the session,
+including when the guest is dealing. A guest connection loss pauses play; a
+new guest using the invite can occupy that seat and receive the current game.
+There is no automatic guest reconnection or persistent match storage.
 
-## Try the two-player game
+## Exact game rules
 
-1. The host clicks **Create a table**.
-2. The host clicks **Copy invite link** and shares it with the guest.
-3. The guest opens the link, or pastes it into **Invite link** and clicks **Join table**.
-4. The host clicks **Deal ten cards**. The host sees card backs; the guest sees the card faces and picks one.
-5. The chosen card turns face up for the host. The other nine remain face down. The guest now has a **Deal next hand** button.
-6. The guest deals and sees card backs; the host sees the faces and selects a card. The selected card is revealed to the guest. The turns continue.
+### The deal and private cards
 
-**Hosting and dealing are separate roles.** The original host keeps the session alive and validates shared state, even during the guest's dealing turn. Keep the host's tab open throughout.
+Use a standard 52-card deck without jokers. Deal three four-card table stacks to
+each player, alternating the recipient of each stack with the non-dealer first.
+Then deal the four-card kitty. Divide the remaining cards into two twelve-card
+hands, the non-dealer's first. All 52 cards are accounted for.
 
-When updating, upload the extracted project's contents, preserving the folders
-and leaving out `.github/` for branch-based Pages publication. This update adds
-`src/view.js` and changes the display, stylesheet, and instructions. Both players
-should refresh the updated website and start a new game.
+Each player initially sees only their own twelve-card hand. Table stacks and
+the kitty are face down. The original host deals the first game; the two players
+alternate dealing after each completed game, independently of who won.
 
-Face-down cards are hidden in the interface, including card text, accessible
-labels, and DOM data attributes. The original host still shuffles and holds the
-full game state, and both browsers receive it. This is visual hiding, not secure
-blinding against someone inspecting browser developer tools.
+### One bid per player
 
-To test on one computer, use a second browser window for the guest. For another device, first publish the project: a `localhost` link points to the device opening it, not to the host's computer.
+The non-dealer bids or passes, then the dealer gets one response. Bid order is:
 
-An invite link grants access to the available guest seat. Share it only with the intended guest. It is an access capability, not a verified real-world identity. Its secret is kept in the URL fragment (the part after `#`); live game state exists only in browser memory.
+`3 High < 3 Low < 4 High < 4 Low < … < 8 High < 8 Low`
 
-## Publish with GitHub Pages
+The dealer must either bid strictly higher or pass. **If the opening player
+passes, the dealer must bid and has no pass option.** There is no further auction.
 
-### Simple option: publish the repository's root folder
+The bid winner is the bidder; the other player is the defender. The defender's
+winning target is **8 minus the bid number, with a minimum of one pack**. This
+rule intentionally uses eight even though there are twelve packs. For example,
+a bid of 3 Low gives the defender a target of five packs; bids of seven or eight
+give a target of one.
 
-1. Create a new public GitHub repository.
-2. Upload the **contents** of this project, preserving its folders. `index.html` must appear at the repository root, rather than inside another `card-table` folder.
-3. Include `src/`, `scripts/`, the stylesheet, favicon, package file, README, license, and `.nojekyll`. The optional `.github/` workflow folder is not needed for this route.
-4. Open the repository's **Settings → Pages**.
-5. Under **Build and deployment**, select **Deploy from a branch**, then **main** and **/(root)**. Save.
-6. Wait for GitHub to finish publishing, then open the site URL shown on that page.
+### Trump and the kitty
 
-The app uses relative file paths, so it can be hosted at a project address such as `https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/`.
+- If the dealer wins the bid, they must call one of the four trump suits before
+  the kitty becomes visible to them.
+- If the non-dealer wins, they see the kitty and complete their four-card
+  discard before calling trump.
+- The bidder selects exactly four cards to discard from the sixteen cards in
+  their hand plus kitty. They keep twelve. Table stacks cannot be exchanged.
+- The opponent sees no kitty or discard faces during play.
 
-### Optional: publish with GitHub Actions
+Once the exchange and trump call are complete, all six exposed table tops are
+revealed to both players. Buried cards remain concealed.
 
-The included `.github/workflows/pages.yml` checks, tests, builds, and deploys the `dist/` folder. To use it, ensure that file is committed and choose **GitHub Actions** as the Pages source instead of publishing from a branch. The workflow's Pages deployment is triggered by a push to `main` or by a manual run.
+### Four cards make one pack
 
-Use one publication option at a time. The root-folder option is sufficient to get started; it does not require uploading or configuring a workflow.
+The bid winner leads the first pack. A pack consists of these four plays:
 
-See [GitHub Pages documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site) and [publishing with a custom workflow](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+1. Leader plays a card from their hand.
+2. Follower plays a card from their hand.
+3. Leader plays one of their exposed table cards.
+4. Follower plays one of their exposed table cards.
 
-## How the pieces fit together
+All four plays follow the suit of the very first hand card whenever possible.
+Availability is checked separately within the relevant pool: hand cards for a
+hand play, or the player's exposed table tops for a table play. Buried cards and
+cards in the other pool do not count. A player who has no led-suit card in that
+pool may play any suit; playing trump is optional.
 
-| File | Responsibility |
-| --- | --- |
-| `index.html` and `styles.css` | Page structure, controls, and card-table appearance. |
-| `src/app.js` | Connects the controls to the game and displays updates. |
-| `src/game.js` | Deck, shuffle, alternating dealer/chooser turns, and selection rules. |
-| `src/view.js` | Shows card faces to the chooser and only the selected card to the dealer. |
-| `src/session.js` | Host/guest connections, admission, messages, synchronization, and disconnect handling. |
-| `src/invite.js` | Builds and validates invite links. |
-| `src/config.js` | PeerJS library location and WebRTC connection settings. |
-| `tests/` | Automated tests for rules, invitations, and simulated sessions. |
-| `scripts/` | Local web server, project checks, and static build. |
+Any trump beats any non-trump. Otherwise only the led suit can win. The strongest
+single qualifying card among the four decides the pack's winner:
 
-The original host owns the official game state. The current chooser can select,
-and the next dealer can start the next hand. Guest actions travel to the host,
-which checks whose turn it is, shuffles or records the selection, and distributes
-the accepted update. The browsers send card identifiers and small messages,
-rather than streaming a screen.
+- High: **A, K, Q, J, 10, 9, …, 2**.
+- Low: **A, 2, 3, 4, 5, …, K**.
 
-## Networking and its current limits
+The winner leads the next pack. A replacement table top stays covered until all
+four plays finish, then turns face up for both players. Empty stacks cannot be
+played. **Completed packs** records every four-card pack and its winner.
 
-Network games dynamically load the open-source [PeerJS](https://peerjs.com/client/getting-started) browser library, pinned to **1.5.5**, from jsDelivr. PeerJS's hosted signaling service helps the browsers find each other, and the configured Google STUN server helps them discover a connection route. After connection, game messages travel over a WebRTC data channel.
+### Winning games and the match
 
-Local practice does not load PeerJS or contact these external services. Two-player games depend on the CDN, signaling service, STUN service, and the participants' network policies. Restricted networks may block them.
+The defender wins as soon as they reach their target. Otherwise all twelve packs
+are played, and the bidder wins if the defender stayed below target. The bidder's
+win is not declared early, because the remaining packs determine BOLO results.
 
-**No TURN relay is configured.** Some network combinations cannot establish a direct WebRTC connection and will need a TURN service. Connection settings are in `src/config.js`. Never put permanent private TURN credentials in a public repository; a deployment needing authenticated TURN should obtain short-lived credentials through an appropriate service. See the [PeerJS connection configuration](https://peerjs.com/client/api/peer) and [MDN's WebRTC protocol explanation](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Protocols).
+At game end all remaining hand cards, all remaining cards in every table stack,
+and the four discards are revealed. The prior played cards remain available in
+the completed-pack history, allowing both players to review the whole deck.
 
-There are no application accounts, database, or analytics. Third-party connection services may still receive connection metadata. Sessions are temporary; there is no saved history, host migration, or automatic recovery after the host refreshes.
+| Result | Condition | Games awarded |
+| --- | --- | --- |
+| BOLO | Bidder wins; defender won zero packs | 2 |
+| SIDE BOLO | Bidder wins; defender won one pack | 1 |
+| REVERSE BOLO | Defender wins; bidder won zero packs | 2 |
+| Ordinary win | Other winning results | 1 |
 
-## Checks and build
+Special result words flash on screen and remain in the result panel. Reduced
+motion settings disable the flashing animation. First to **seven or more** wins
+(the two-game bonus can take a score from six to eight). Match results are kept
+for the life of the current session.
+
+## Development
+
+Install Node.js 20 or newer. There are no npm packages to install.
 
 ```sh
-npm test
+npm start
+```
+
+Open the local address printed in the terminal. To test both seats on one
+computer, open a second browser window and use the invite. A `localhost` link
+works only on that computer; publish the website before inviting another device.
+
+```sh
 npm run check
+npm test
 npm run build
 ```
 
-The build copies the public application files into `dist/`; no framework or package installation is required. Building is optional for root-folder GitHub Pages publication.
+The build regenerates the two self-contained HTML pages from the readable source
+and copies the production homepage into `dist/`. `npm run standalone` regenerates
+the pages without creating `dist/`. The optional `.github/workflows/pages.yml`
+checks, tests, builds, and publishes when Pages is configured for GitHub Actions.
+Use the branch publication route or the custom workflow, rather than both.
 
-Automated verification covers card rules, invite handling, simulated host/guest
-sessions, alternating turns, and which cards each player is shown. The browser timer regression is included.
-The first version has been reported working on the user's live site; the new
-display behavior still needs a live browser retest after deployment.
-Test the full cycle on two devices: host deals, guest selects and deals, host
-selects and deals again. Also test joining after a deal, a second guest being
-refused, and closing the original host's page during the guest's dealing turn.
+| File | Responsibility |
+| --- | --- |
+| `index.html` | Generated, self-contained homepage for GitHub Pages. |
+| `src/page.html`, `styles.css` | Editable page template and stylesheet. |
+| `src/game.js` | Rules, dealing, auction, kitty, legal moves, pack resolution, scoring, and validation. |
+| `src/view.js` | Information displayed to one seat: private hand, hidden kitty, public tops, end reveal. |
+| `src/session.js` | PeerJS connections, authenticated room admission, authoritative actions, synchronization, and disconnects. |
+| `src/app.js` | Stage controls, cards, match scores, local rehearsal, and result animations. |
+| `src/invite.js`, `src/version.js` | Versioned invite links and release identifier. |
+| `src/config.js` | PeerJS location and ICE connection settings. |
+| `tests/` | Rule, privacy, transport, and actual generated-interface regression tests. |
 
-## Where this can go next
+The message protocol is version 3; actions carry the shared revision to reject
+stale or duplicated moves. The host validates actions under the sender's actual
+seat, never an identity supplied in the action. State callbacks are deep copies.
 
-The card rules are separate from the connection and display code so that another shared activity can replace them later. This is a learning prototype, not a validated scientific-study or data-collection platform.
+## Network and privacy scope
 
-PWA installation is deferred. A future version can add a manifest, app icons, and optional interface caching without changing the basic host/guest model. Multiplayer will still require connectivity.
+The networked mode downloads the open-source [PeerJS](https://peerjs.com/client/getting-started)
+browser library, pinned to 1.5.5, from jsDelivr when someone creates or joins a
+real table. PeerJS Cloud performs signaling, and the configured Google STUN
+service helps establish a direct WebRTC data channel. Local practice does not
+load PeerJS or contact those services.
+
+No TURN relay is configured. Restricted network combinations may need one. The
+settings are in `src/config.js`; do not embed permanent private TURN credentials
+in this public code. See the [PeerJS configuration](https://peerjs.com/client/api/peer)
+and [WebRTC protocol documentation](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Protocols).
+
+As agreed for this testing prototype, card privacy is **visual only**. The host
+shuffles and holds the full deck state, and both browsers receive that state.
+Hidden card elements omit identities, including accessible labels and DOM data
+attributes, but a person inspecting browser data can still discover the cards.
+This is not cryptographic blinding. There are no application accounts, analytics,
+backend database, saved matches, or host migration.
+
+## Verification
+
+Automated checks cover both auction outcomes, mandatory bidding after a pass,
+kitty/trump timing, separate-pool suit following, original-led-suit priority,
+high/low trump resolution, all scoring branches, seven-point matches, deep state
+isolation, stale guest actions, disconnects, and 52-card conservation. Interface
+tests drive actual source and generated homepage code through both seats with a
+simulated DOM and Peer transport.
+
+The previous simple game was reported working on the live site. This new full
+game has not yet been tested through actual browsers and external networks in
+the development environment. After publishing, run a two-device acceptance test:
+check both kitty sequences, a low-bid game, forced suit following in both pools,
+a mid-pack stack replacement, an early defender win, dealer rotation, and a
+complete match. Confirm v0.4.0 in both footers before creating the table.
 
 ## License
 
-MIT; see `LICENSE`. PeerJS is a separate MIT-licensed dependency loaded from the configured CDN.
+MIT; see `LICENSE`. PeerJS is a separate MIT-licensed component loaded from the
+configured CDN; see `THIRD_PARTY_NOTICES.md`.
