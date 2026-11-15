@@ -54,6 +54,11 @@
           <div class="error-panel" id="error-panel" role="alert" hidden><span id="error-message"></span><button class="text-button" id="dismiss-error" aria-label="Dismiss error">×</button></div>
         </aside>
         <div class="board-column">
+          <section class="live-pack-bar" id="live-pack-bar" aria-label="Current pack, always visible during play" hidden>
+            <div class="live-pack-heading"><strong id="live-pack-label">CURRENT PACK</strong><span id="live-pack-suit">Waiting for the lead</span></div>
+            <div class="live-pack-cards" id="live-pack-cards" aria-label="Cards played so far"></div>
+            <p id="last-pack-summary" class="last-pack-summary"></p>
+          </section>
           <section class="phase-panel" aria-live="polite" aria-atomic="false">
             <div class="phase-heading"><div><p class="eyebrow" id="stage-label">WELCOME TO THE TABLE</p><h2 id="stage-title">Every game starts with a deal.</h2></div><span class="phase-chip" id="game-label">GAME 01</span></div>
             <p id="stage-instruction">Create a table and invite a friend, or explore both seats in local practice.</p>
@@ -69,7 +74,10 @@
             <section class="pack-zone"><div class="pack-heading"><span class="rule"></span><span id="pack-label">THE FIRST PACK AWAITS</span><span class="rule"></span></div><p id="pack-instruction">The bid winner will lead.</p><div class="pack-cards" id="pack-cards" aria-label="Cards played in the current pack"></div></section>
             <div class="table-zone own-zone"><div class="zone-heading"><span id="own-table-label">YOUR TABLE</span><span id="table-hint">Three stacks of four</span></div><div class="stacks" id="own-table" aria-label="Your three table stacks"></div></div>
           </section>
-          <section class="hand-panel"><div class="section-heading"><div><p class="eyebrow" id="hand-eyebrow">YOUR PRIVATE HAND</p><h2 id="hand-title">Twelve cards. Your call.</h2></div><span id="hand-count" class="count-chip">12 CARDS</span></div><p class="hint" id="hand-instruction">Only you see these card faces during play.</p><div class="hand-grid" id="own-hand" aria-label="Your hand"></div></section>
+          <section class="hand-panel"><div class="section-heading"><div><p class="eyebrow" id="hand-eyebrow">YOUR PRIVATE HAND</p><h2 id="hand-title">Twelve cards. Your call.</h2></div><span id="hand-count" class="count-chip">12 CARDS</span></div>
+            <div class="hand-tools"><button class="button secondary" id="arrange-toggle" aria-pressed="false" aria-controls="arrange-controls">Arrange hand</button><span id="arrange-status" class="hint" role="status"></span></div>
+            <div class="arrange-controls" id="arrange-controls" hidden><button class="button secondary" id="sort-suit">Sort by suit</button><button class="button secondary" id="sort-rank">Sort by rank</button><button class="button secondary" id="move-left" aria-label="Move selected card left">← Move left</button><button class="button secondary" id="move-right" aria-label="Move selected card right">Move right →</button></div>
+            <p class="hint" id="hand-instruction">Only you see these card faces during play.</p><div class="hand-grid" id="own-hand" aria-label="Your hand"></div></section>
           <section class="hand-panel kitty-panel" id="kitty-panel" hidden><div class="section-heading"><div><p class="eyebrow">FOUR MORE POSSIBILITIES</p><h2>The kitty.</h2></div><span id="kitty-status" class="count-chip">PRIVATE</span></div><p id="kitty-instruction" class="hint"></p><div class="kitty-grid" id="kitty-cards" aria-label="The kitty"></div></section>
           <section class="hand-panel" id="discard-panel" hidden><p class="eyebrow">THE FOUR DISCARDS</p><div class="kitty-grid" id="discard-cards" aria-label="Revealed discards"></div></section>
           <details class="history-panel" id="history-panel"><summary id="history-summary">Completed packs · 0</summary><div id="pack-history"></div></details>

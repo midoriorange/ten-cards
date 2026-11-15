@@ -346,6 +346,61 @@ test('pack order is leader hand, follower hand, leader table, follower table; ea
   assert.equal(state.currentPack.ledSuit, null);
 });
 
+test('a completed pack stays visible until its winner directly leads the next hand card', () => {
+  let state = placeCards(ready(), [
+    [['hands', 'guest'], 0, '7H'], [['hands', 'host'], 0, 'AH'], [['hands', 'host'], 1, '2C'],
+    [['table', 'guest', 0], 0, '2H'], [['table', 'host', 0], 0, '3H'],
+  ]);
+  state = playPack(state, ['7H', 'AH', 0, 0]);
+  assert.equal(state.phase, 'pack_complete');
+  assert.equal(state.history[0].winner, 'host');
+  assert.equal(state.history[0].ledSuit, 'H');
+  assert.equal(state.currentPack, null);
+  const completed = structuredClone(state);
+  const winnerLegal = getLegalActions(state, 'host');
+  assert.deepEqual(winnerLegal.handCards, state.hands.host, 'a fresh lead can use any own hand card');
+  assert.deepEqual(getLegalActions(state, 'guest').handCards, []);
+  winnerLegal.handCards.pop();
+  assert.deepEqual(state, completed, 'reading or changing legal-action arrays does not alter the completed pack');
+  reject(state, 'guest', { type: 'playHand', cardId: state.hands.guest[0] });
+  reject(state, 'host', { type: 'playHand', cardId: state.hands.guest[0] });
+  reject(state, 'host', { type: 'playTable', stackIndex: 0 });
+
+  const next = act(state, 'host', { type: 'playHand', cardId: '2C' });
+  assert.equal(next.revision, completed.revision + 1, 'starting and leading is one atomic action');
+  assert.equal(next.phase, 'play');
+  assert.equal(next.currentPack.number, 2);
+  assert.equal(next.currentPack.leader, 'host');
+  assert.equal(next.currentPack.ledSuit, 'C', 'the old pack suit does not constrain the fresh lead');
+  assert.deepEqual(next.currentPack.plays, [{ role: 'host', source: 'hand', cardId: '2C', stackIndex: null }]);
+  assert.deepEqual(next.history, completed.history, 'all four cards of the completed pack remain in history');
+  assert.equal(next.hands.host.includes('2C'), false);
+  assert.equal(next.hands.host.length, completed.hands.host.length - 1);
+  assert.equal(getActivePlayer(next), 'guest');
+  conserved(next);
+});
+
+test('all twelve packs can be completed by direct hand leads without continue actions', () => {
+  let state = scoringBoard(ready(), 'bolo');
+  let leadsFromCompletedPack = 0;
+  while (!ENDED.has(state.phase)) {
+    const role = getActivePlayer(state);
+    const legal = getLegalActions(state, role);
+    if (state.phase === 'pack_complete') leadsFromCompletedPack += 1;
+    const action = legal.handCards.length
+      ? { type: 'playHand', cardId: legal.handCards[0] }
+      : { type: 'playTable', stackIndex: legal.tableStacks[0] };
+    state = act(state, role, action);
+  }
+  assert.equal(leadsFromCompletedPack, 11);
+  assert.equal(state.history.length, 12);
+  assert.equal(state.result.badge, 'BOLO');
+  assert.equal(state.currentPack, null, 'an ended game does not automatically start another pack');
+  for (const role of ROLES) assert.deepEqual(getLegalActions(state, role).handCards, []);
+  reject(state, 'guest', { type: 'playHand', cardId: 'AS' });
+  conserved(state);
+});
+
 test('hand following ignores table cards, and exposed-table following ignores buried cards', () => {
   let state = ready();
   const placements = suitCards('C').slice(0, 12).map((id, index) => [['hands', 'host'], index, id]);

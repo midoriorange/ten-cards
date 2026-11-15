@@ -8,7 +8,7 @@ const packageInfo = JSON.parse(await readFile(new URL('package.json', root), 'ut
 assert.equal(APP_VERSION, packageInfo.version, 'The app and package release versions must match.');
 const css = await readFile(new URL('styles.css', root), 'utf8');
 const icon = await readFile(new URL('favicon.svg', root));
-const modules = ['version', 'game', 'view', 'session', 'invite', 'config', 'app'];
+const modules = ['version', 'game', 'hand-order', 'view', 'session', 'invite', 'config', 'app'];
 const sources = [];
 for (const name of modules) {
   let code = await readFile(new URL(`src/${name}.js`, root), 'utf8');

@@ -122,7 +122,12 @@ export function getLegalActions(state, role) {
     legal.canPass = state.auction.entries.length === 0 || Boolean(previous);
   } else if (state.phase === 'trump_before' || state.phase === 'trump_after') legal.canCallTrump = true;
   else if (state.phase === 'kitty') legal.canDiscard = true;
-  else if (state.phase === 'pack_complete') legal.canContinue = true;
+  else if (state.phase === 'pack_complete') {
+    // Keep the completed four-card pack visible until its winner leads again.
+    // The explicit continue action remains available to older callers.
+    legal.handCards = [...state.hands[role]];
+    legal.canContinue = true;
+  }
   else if (state.phase === 'play') {
     const pack = state.currentPack;
     if (pack.plays.length < 2) legal.handCards = [...legalPool(state.hands[role], pack.ledSuit)];
@@ -249,6 +254,7 @@ export function applyAction(state, role, action, random = secureRandom) {
     else next.phase = 'trump_after';
   } else if (action.type === 'playHand' && legal.handCards.includes(action.cardId)) {
     next = structuredClone(state);
+    if (state.phase === 'pack_complete') nextPack(next, state.history.at(-1).winner);
     playCard(next, role, 'hand', action.cardId, null);
   } else if (action.type === 'playTable' && legal.tableStacks.includes(action.stackIndex)) {
     next = structuredClone(state);

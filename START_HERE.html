@@ -73,6 +73,17 @@ progress::-webkit-progress-value { background:#9b975c; border-radius:10px; }
 .error-panel { display:flex; justify-content:space-between; align-items:center; gap:10px; border:1px solid #deb9a3; background:#fff4ea; border-radius:6px; padding:12px; font-size:11px; color:#94593e; }
 .error-panel button { font-size:20px; }
 .phase-panel { padding:21px 24px; border-left:3px solid #809168; }
+.live-pack-bar { position:sticky; top:8px; z-index:12; align-self:start; padding:11px 16px 8px; border:1px solid #c4cba9; border-radius:8px; background:#f7f7ed; box-shadow:0 5px 18px #1d3e2520; }
+.live-pack-heading { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:8px; font-size:9px; color:#758165; }
+.live-pack-heading strong { color:var(--ink); font-size:9px; letter-spacing:1px; }
+.live-pack-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; }
+.live-pack-cards .pack-slot { display:flex; flex-direction:column; align-items:center; }
+.live-pack-cards .pack-slot small { color:#78846c; font-size:8px; margin-top:4px; }
+.live-pack-cards .playing-card,.live-pack-cards .empty-card { flex-shrink:0; width:42px; height:58px; }
+.live-pack-cards .empty-card { background:#eeefe4; color:#a0ac91; border-color:#cbd4b8; }
+.live-pack-cards .playing-card .corner { font-size:11px; }
+.live-pack-cards .playing-card .pip { font-size:19px; }
+.last-pack-summary { font-size:8px; color:#849077; text-align:center; margin-top:6px; }
 .phase-heading,.section-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .phase-heading .eyebrow { margin-bottom:6px; }
 .phase-panel>p { color:#7b8471; font-size:11px; line-height:1.85; margin-top:10px; }
@@ -114,6 +125,7 @@ progress::-webkit-progress-value { background:#9b975c; border-radius:10px; }
 .pack-zone>p { font-size:9px; text-align:center; color:#97ad87; margin:7px 0 17px; }
 .pack-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; max-width:430px; margin:auto; }
 .pack-slot { min-width:0; text-align:center; }
+.pack-cards .pack-slot>.playing-card,.pack-cards .pack-slot>.empty-card { width:100%; height:132px; }
 .pack-slot small { display:block; font-size:8px; margin-top:8px; color:#9bb18b; }
 .playing-card,.card-back,.empty-card { display:block; position:relative; aspect-ratio:.71; min-width:0; border-radius:5px; border:1px solid #eeeade; background:#fffdf3; box-shadow:0 2px 5px #09261f35; }
 .playing-card { padding:0; text-align:left; color:#203b31; overflow:hidden; transition:transform .15s,outline .15s; opacity:1!important; }
@@ -136,6 +148,15 @@ progress::-webkit-progress-value { background:#9b975c; border-radius:10px; }
 .section-heading .eyebrow { margin-bottom:5px; }
 .section-heading h2 { font-size:24px; }
 .hand-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; margin-top:20px; }
+.hand-tools { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:14px; }
+.hand-tools .button,.arrange-controls .button { min-height:34px; font-size:10px; padding:7px 10px; }
+.hand-tools .hint { margin:0; }
+.arrange-controls { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; padding:11px; background:#f0f1e4; border-radius:5px; }
+.hand-grid.arranging .playing-card { cursor:grab; }
+.hand-grid.arranging .playing-card:active { cursor:grabbing; }
+.hand-grid .playing-card.arrange-selected { outline:3px solid #8eaa73; outline-offset:3px; transform:translateY(-4px); }
+.hand-grid .playing-card.drop-target { box-shadow:inset 4px 0 #97ab78; outline:2px dashed #8fa16c; outline-offset:3px; }
+.hand-grid .playing-card.dragging { opacity:.6!important; }
 .kitty-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; max-width:460px; margin-top:15px; }
 .history-panel { border:1px solid var(--line); border-radius:7px; padding:14px 18px; background:#f1f1e7; }
 .history-panel summary { cursor:pointer; color:#6e7d61; font-size:11px; }
@@ -163,9 +184,10 @@ progress::-webkit-progress-value { background:#9b975c; border-radius:10px; }
 @media(max-width:800px) { .app-shell{max-width:700px;padding:0 20px}.site-header{height:80px}.intro{padding:26px 0}h1{font-size:39px}.workspace{grid-template-columns:1fr}.sidebar{grid-template-columns:1fr 1fr;gap:13px}#setup-panel,#active-panel{grid-column:1/-1}.score-panel,.contract-panel{padding:18px}.connection-message,.error-panel{grid-column:1/-1}.connection-status{grid-column:1/-1}.board-column{gap:16px}.felt{padding:24px}.stack-card{max-width:88px}.hand-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}.playing-card .corner{font-size:16px}.playing-card .pip{font-size:29px}.intro>p{font-size:10px}.site-footer{font-size:8px}.site-footer>span+span{font-size:7px} }
 @media(max-width:440px) { .app-shell{padding:0 14px}.intro>p{display:none}h1{font-size:38px}.sidebar{grid-template-columns:1fr 1fr;gap:10px}.panel{padding:17px}.contract-panel h3{font-size:19px}.pack-counts{flex-direction:column;gap:4px}.felt{padding:21px 17px}.stacks{gap:18px}.stack-card{max-width:72px}.pack-cards{gap:9px}.pack-zone{padding:22px 0}.pack-heading{font-size:7px;gap:9px}.rule{width:20px}.hand-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.hand-panel,.phase-panel{padding:18px}.phase-heading h2{font-size:23px}.phase-chip{font-size:7px;padding:3px 7px}.playing-card .corner{font-size:17px}.playing-card .pip{font-size:30px}.playing-card.mini .corner{font-size:13px}.playing-card.mini .pip{font-size:23px}.kitty-grid{gap:9px}.history-pack{align-items:flex-start;gap:10px}.history-cards .playing-card{width:33px}.history-cards .playing-card .corner{font-size:9px}.history-cards .playing-card .pip{font-size:13px}.site-footer>span:first-child{max-width:130px}.site-footer>span+span{max-width:125px;text-align:right}.suit-button{width:65px} }
 @media(prefers-reduced-motion:reduce) { *,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important} }
+@media(max-width:440px) { .live-pack-bar { top:4px; padding:9px 10px 7px; } .live-pack-heading { font-size:8px; gap:6px; } .live-pack-heading strong { font-size:8px; } .pack-cards .pack-slot>.playing-card,.pack-cards .pack-slot>.empty-card { height:99px; } }
 
 </style>
-  <meta name="application-version" content="0.4.0">
+  <meta name="application-version" content="0.5.0">
 </head>
 <body>
   <div class="app-shell">
@@ -210,6 +232,11 @@ progress::-webkit-progress-value { background:#9b975c; border-radius:10px; }
           <div class="error-panel" id="error-panel" role="alert" hidden><span id="error-message"></span><button class="text-button" id="dismiss-error" aria-label="Dismiss error">×</button></div>
         </aside>
         <div class="board-column">
+          <section class="live-pack-bar" id="live-pack-bar" aria-label="Current pack, always visible during play" hidden>
+            <div class="live-pack-heading"><strong id="live-pack-label">CURRENT PACK</strong><span id="live-pack-suit">Waiting for the lead</span></div>
+            <div class="live-pack-cards" id="live-pack-cards" aria-label="Cards played so far"></div>
+            <p id="last-pack-summary" class="last-pack-summary"></p>
+          </section>
           <section class="phase-panel" aria-live="polite" aria-atomic="false">
             <div class="phase-heading"><div><p class="eyebrow" id="stage-label">WELCOME TO THE TABLE</p><h2 id="stage-title">Every game starts with a deal.</h2></div><span class="phase-chip" id="game-label">GAME 01</span></div>
             <p id="stage-instruction">Create a table and invite a friend, or explore both seats in local practice.</p>
@@ -225,7 +252,10 @@ progress::-webkit-progress-value { background:#9b975c; border-radius:10px; }
             <section class="pack-zone"><div class="pack-heading"><span class="rule"></span><span id="pack-label">THE FIRST PACK AWAITS</span><span class="rule"></span></div><p id="pack-instruction">The bid winner will lead.</p><div class="pack-cards" id="pack-cards" aria-label="Cards played in the current pack"></div></section>
             <div class="table-zone own-zone"><div class="zone-heading"><span id="own-table-label">YOUR TABLE</span><span id="table-hint">Three stacks of four</span></div><div class="stacks" id="own-table" aria-label="Your three table stacks"></div></div>
           </section>
-          <section class="hand-panel"><div class="section-heading"><div><p class="eyebrow" id="hand-eyebrow">YOUR PRIVATE HAND</p><h2 id="hand-title">Twelve cards. Your call.</h2></div><span id="hand-count" class="count-chip">12 CARDS</span></div><p class="hint" id="hand-instruction">Only you see these card faces during play.</p><div class="hand-grid" id="own-hand" aria-label="Your hand"></div></section>
+          <section class="hand-panel"><div class="section-heading"><div><p class="eyebrow" id="hand-eyebrow">YOUR PRIVATE HAND</p><h2 id="hand-title">Twelve cards. Your call.</h2></div><span id="hand-count" class="count-chip">12 CARDS</span></div>
+            <div class="hand-tools"><button class="button secondary" id="arrange-toggle" aria-pressed="false" aria-controls="arrange-controls">Arrange hand</button><span id="arrange-status" class="hint" role="status"></span></div>
+            <div class="arrange-controls" id="arrange-controls" hidden><button class="button secondary" id="sort-suit">Sort by suit</button><button class="button secondary" id="sort-rank">Sort by rank</button><button class="button secondary" id="move-left" aria-label="Move selected card left">← Move left</button><button class="button secondary" id="move-right" aria-label="Move selected card right">Move right →</button></div>
+            <p class="hint" id="hand-instruction">Only you see these card faces during play.</p><div class="hand-grid" id="own-hand" aria-label="Your hand"></div></section>
           <section class="hand-panel kitty-panel" id="kitty-panel" hidden><div class="section-heading"><div><p class="eyebrow">FOUR MORE POSSIBILITIES</p><h2>The kitty.</h2></div><span id="kitty-status" class="count-chip">PRIVATE</span></div><p id="kitty-instruction" class="hint"></p><div class="kitty-grid" id="kitty-cards" aria-label="The kitty"></div></section>
           <section class="hand-panel" id="discard-panel" hidden><p class="eyebrow">THE FOUR DISCARDS</p><div class="kitty-grid" id="discard-cards" aria-label="Revealed discards"></div></section>
           <details class="history-panel" id="history-panel"><summary id="history-summary">Completed packs · 0</summary><div id="pack-history"></div></details>
@@ -245,7 +275,7 @@ const __packsModules = Object.create(null);
 // src/version.js
 __packsModules["version"] = (() => {
 // Also carried in invite URLs so guests request the same release of the page.
-const APP_VERSION = '0.4.0';
+const APP_VERSION = '0.5.0';
 
 return {APP_VERSION};
 })();
@@ -376,7 +406,12 @@ function getLegalActions(state, role) {
     legal.canPass = state.auction.entries.length === 0 || Boolean(previous);
   } else if (state.phase === 'trump_before' || state.phase === 'trump_after') legal.canCallTrump = true;
   else if (state.phase === 'kitty') legal.canDiscard = true;
-  else if (state.phase === 'pack_complete') legal.canContinue = true;
+  else if (state.phase === 'pack_complete') {
+    // Keep the completed four-card pack visible until its winner leads again.
+    // The explicit continue action remains available to older callers.
+    legal.handCards = [...state.hands[role]];
+    legal.canContinue = true;
+  }
   else if (state.phase === 'play') {
     const pack = state.currentPack;
     if (pack.plays.length < 2) legal.handCards = [...legalPool(state.hands[role], pack.ledSuit)];
@@ -503,6 +538,7 @@ function applyAction(state, role, action, random = secureRandom) {
     else next.phase = 'trump_after';
   } else if (action.type === 'playHand' && legal.handCards.includes(action.cardId)) {
     next = structuredClone(state);
+    if (state.phase === 'pack_complete') nextPack(next, state.history.at(-1).winner);
     playCard(next, role, 'hand', action.cardId, null);
   } else if (action.type === 'playTable' && legal.tableStacks.includes(action.stackIndex)) {
     next = structuredClone(state);
@@ -680,6 +716,92 @@ function isValidState(state) {
 return {createDeck,describeCard,otherPlayer,bidLabel,createGame,getActivePlayer,getLegalActions,applyAction,isValidState};
 })();
 
+// src/hand-order.js
+__packsModules["hand-order"] = (() => {
+const { describeCard } = __packsModules["game"];
+
+const HAND_ORDER_SUITS = ['S', 'H', 'D', 'C'];
+const HAND_ORDER_HIGH_RANKS = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
+const HAND_ORDER_LOW_RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+function handOrderCard(id, label) {
+  try { return describeCard(id); }
+  catch { throw new TypeError(`${label} must contain valid card IDs.`); }
+}
+
+function checkedHandOrder(order) {
+  if (!Array.isArray(order)) throw new TypeError('Hand order must be an array.');
+  const seen = new Set();
+  for (const id of order) {
+    handOrderCard(id, 'Hand order');
+    if (seen.has(id)) throw new TypeError('Hand order must not contain duplicate cards.');
+    seen.add(id);
+  }
+  return [...order];
+}
+
+/**
+ * Keep the local relative order of cards still held, then append new cards.
+ * Previous stale/duplicate entries are ignored; current IDs are validated and
+ * deduplicated. Both arguments must be arrays. Reset previousOrder to [] at the
+ * start of a new game so any coincidentally repeated cards get a fresh order.
+ */
+function reconcileHandOrder(previousOrder, currentCardIds) {
+  if (!Array.isArray(previousOrder) || !Array.isArray(currentCardIds)) {
+    throw new TypeError('Previous order and current cards must be arrays.');
+  }
+  const current = new Set();
+  for (const id of currentCardIds) {
+    handOrderCard(id, 'Current cards');
+    current.add(id);
+  }
+  const result = [];
+  const included = new Set();
+  for (const id of [...previousOrder, ...currentCardIds]) {
+    if (current.has(id) && !included.has(id)) {
+      result.push(id);
+      included.add(id);
+    }
+  }
+  return result;
+}
+
+/**
+ * Move a card to its final zero-based index, after removal from its old place.
+ * Integer targets are clamped to the hand's bounds. A valid card not held is a
+ * no-op returning a new array. Invalid IDs, duplicates, and noninteger targets
+ * throw TypeError. Neither the input order nor shared game state is modified.
+ */
+function moveHandCard(order, cardId, targetIndex) {
+  const next = checkedHandOrder(order);
+  handOrderCard(cardId, 'The moved card');
+  if (!Number.isSafeInteger(targetIndex)) throw new TypeError('Target index must be an integer.');
+  const oldIndex = next.indexOf(cardId);
+  if (oldIndex === -1) return next;
+  next.splice(oldIndex, 1);
+  const finalIndex = Math.max(0, Math.min(targetIndex, next.length));
+  next.splice(finalIndex, 0, cardId);
+  return next;
+}
+
+/** Sort a new local order by suit/rank using the contract's High or Low order. */
+function sortHandOrder(order, sortBy = 'suit', bidMode = 'high') {
+  const next = checkedHandOrder(order);
+  if (sortBy !== 'suit' && sortBy !== 'rank') throw new TypeError('Sort by suit or rank.');
+  if (bidMode !== 'high' && bidMode !== 'low') throw new TypeError('Bid mode must be high or low.');
+  const ranks = bidMode === 'low' ? HAND_ORDER_LOW_RANKS : HAND_ORDER_HIGH_RANKS;
+  const cards = next.map(id => ({ id, ...describeCard(id) }));
+  cards.sort((a, b) => {
+    const suitDifference = HAND_ORDER_SUITS.indexOf(a.suit) - HAND_ORDER_SUITS.indexOf(b.suit);
+    const rankDifference = ranks.indexOf(a.rank) - ranks.indexOf(b.rank);
+    return sortBy === 'suit' ? suitDifference || rankDifference : rankDifference || suitDifference;
+  });
+  return cards.map(card => card.id);
+}
+
+return {reconcileHandOrder,moveHandCard,sortHandOrder};
+})();
+
 // src/view.js
 __packsModules["view"] = (() => {
 const { isValidState, describeCard, getLegalActions, getActivePlayer, otherPlayer } = __packsModules["game"];
@@ -777,7 +899,7 @@ __packsModules["session"] = (() => {
  */
 const { createGame, applyAction, isValidState } = __packsModules["game"];
 
-const VERSION = 3;
+const VERSION = 4;
 const HOST_ID = /^ten-[a-f0-9]{32}$/;
 const SECRET = /^[a-f0-9]{32}$/;
 const noop = () => {};
@@ -997,9 +1119,9 @@ function createSession({
       if (closed) return;
       if (conn !== connection && pending.has(conn) && packetShape(data) &&
         data.type === 'hello' && data.v !== VERSION) {
-        // Reply using either older supported envelope so those clients receive
+        // Reply using an older supported envelope so those clients receive
         // a reject they understand, rather than waiting for an unknown protocol.
-        reject(conn, 'version-mismatch', data.v === 1 || data.v === 2 ? data.v : VERSION);
+        reject(conn, 'version-mismatch', [1, 2, 3].includes(data.v) ? data.v : VERSION);
         return;
       }
       if (!validPacket(data)) return;
@@ -1271,6 +1393,7 @@ const { createSession } = __packsModules["session"];
 const { makeInviteLink, parseInviteLink } = __packsModules["invite"];
 const { peerOptions, peerLibraryUrl } = __packsModules["config"];
 const { APP_VERSION } = __packsModules["version"];
+const { reconcileHandOrder, moveHandCard, sortHandOrder } = __packsModules["hand-order"];
 
 const $ = id => document.getElementById(id);
 const localFile = location.protocol === 'file:';
@@ -1293,6 +1416,13 @@ let celebrationTimer;
 let lastCelebration = '';
 let selectedDiscards = new Set();
 let lastBidOptions = '';
+let handOrders = { host: [], guest: [] };
+let arranging = false;
+let selectedOrderCard = null;
+let draggedOrderCard = null;
+let dragRole = null;
+let suppressHandClickUntil = 0;
+let arrangeMessage = '';
 
 const playerName = role => role === 'host' ? 'Host' : 'Guest';
 const viewerRole = () => mode === 'practice' ? practiceRole : mode === 'guest' ? 'guest' : 'host';
@@ -1344,6 +1474,9 @@ function loadPeer() {
 
 function acceptState(next) {
   const changed = next.revision !== state.revision;
+  const newGame = next.gameNumber !== state.gameNumber || next.phase === 'lobby';
+  const oldRole = viewerRole();
+  if (newGame) handOrders = { host: [], guest: [] };
   state = next;
   pending = false;
   clearTimeout(pendingTimer);
@@ -1351,11 +1484,16 @@ function acceptState(next) {
   if (!next.result) { clearTimeout(celebrationTimer); $('celebration').hidden = true; }
   if (next.phase === 'lobby') lastCelebration = '';
   if (mode === 'practice') practiceRole = getActivePlayer(state) || practiceRole;
+  if (newGame || endedGame(next) || viewerRole() !== oldRole) {
+    arranging = false; selectedOrderCard = null; draggedOrderCard = null; dragRole = null; arrangeMessage = '';
+    suppressHandClickUntil = 0;
+  }
   render();
 }
 
 function act(action) {
   if (!gameReady() || pending) return false;
+  if (arranging && ['playHand', 'playTable'].includes(action.type)) return false;
   clearError();
   if (mode === 'practice') {
     const next = applyAction(state, practiceRole, action);
@@ -1384,6 +1522,83 @@ function chooseDiscard(cardId) {
   else if (selectedDiscards.size < 4) selectedDiscards.add(cardId);
   else { toast('Choose exactly four cards. Unselect one to change your choice.'); return; }
   render();
+}
+
+function moveLocalCard(cardId, index) {
+  const role = viewerRole();
+  if (!arranging || !handOrders[role].includes(cardId)) return;
+  handOrders[role] = moveHandCard(handOrders[role], cardId, index);
+  selectedOrderCard = cardId;
+  arrangeMessage = `${describeCard(cardId).name} moved to position ${handOrders[role].indexOf(cardId) + 1}.`;
+  render();
+  $('own-hand').querySelector(`[data-card="${cardId}"]`)?.focus({ preventScroll: true });
+}
+
+function arrangeCardClick(cardId) {
+  if (Date.now() < suppressHandClickUntil) return;
+  const order = handOrders[viewerRole()];
+  if (!selectedOrderCard) { selectedOrderCard = cardId; arrangeMessage = 'Choose a destination card, or use Move left / right.'; render(); }
+  else if (selectedOrderCard === cardId) { selectedOrderCard = null; arrangeMessage = ''; render(); }
+  else moveLocalCard(selectedOrderCard, order.indexOf(cardId));
+}
+
+function renderArrangeTools(view) {
+  const allowed = mode !== 'idle' && view.hand.length > 1 && !endedGame(view);
+  $('arrange-toggle').hidden = !allowed;
+  $('arrange-toggle').disabled = pending || !allowed;
+  $('arrange-toggle').textContent = arranging ? 'Done arranging ✓' : 'Arrange hand';
+  $('arrange-toggle').setAttribute('aria-pressed', String(arranging));
+  $('arrange-controls').hidden = !arranging || !allowed;
+  $('arrange-status').textContent = !allowed ? '' : arranging ? (arrangeMessage || 'Arrange mode · moving cards does not play them.') : 'Your arrangement stays on this device.';
+  const index = handOrders[view.role].indexOf(selectedOrderCard);
+  $('move-left').disabled = !arranging || pending || index <= 0;
+  $('move-right').disabled = !arranging || pending || index < 0 || index >= handOrders[view.role].length - 1;
+  $('sort-suit').disabled = !arranging || pending;
+  $('sort-rank').disabled = !arranging || pending;
+  $('sort-rank').title = `Strongest first for ${view.contract?.mode || 'high'} play.`;
+}
+
+function makeArrangeable(node, card, view) {
+  node.draggable = true;
+  node.classList.toggle('arrange-selected', selectedOrderCard === card.id);
+  node.setAttribute('aria-pressed', String(selectedOrderCard === card.id));
+  node.setAttribute('aria-label', `${card.name}, arrange card${selectedOrderCard === card.id ? ', selected to move' : ''}`);
+  node.addEventListener('keydown', event => {
+    if (!arranging || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const order = handOrders[viewerRole()];
+    const index = event.key === 'Home' ? 0 : event.key === 'End' ? order.length - 1
+      : order.indexOf(card.id) + (event.key === 'ArrowLeft' ? -1 : 1);
+    moveLocalCard(card.id, index);
+  });
+  node.addEventListener('dragstart', event => {
+    if (!arranging) { event.preventDefault(); return; }
+    draggedOrderCard = card.id; selectedOrderCard = card.id; dragRole = viewerRole();
+    if (event.dataTransfer) { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', card.id); }
+    for (const child of $('own-hand').children) child.classList.remove('arrange-selected');
+    node.classList.add('dragging', 'arrange-selected');
+    renderArrangeTools(view);
+  });
+  node.addEventListener('dragover', event => {
+    if (!arranging || !draggedOrderCard || dragRole !== viewerRole()) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    node.classList.add('drop-target');
+  });
+  node.addEventListener('dragleave', () => node.classList.remove('drop-target'));
+  node.addEventListener('drop', event => {
+    if (!arranging || !draggedOrderCard || dragRole !== viewerRole()) return;
+    event.preventDefault(); event.stopPropagation();
+    const order = handOrders[viewerRole()];
+    const index = order.indexOf(card.id);
+    const moving = draggedOrderCard;
+    draggedOrderCard = null; dragRole = null;
+    suppressHandClickUntil = Date.now() + 350;
+    if (index >= 0) moveLocalCard(moving, index);
+  });
+  node.addEventListener('dragend', () => {
+    node.classList.remove('dragging', 'drop-target'); draggedOrderCard = null; dragRole = null;
+  });
 }
 
 function cardNode(card, { enabled = false, selected = false, mini = false, onClick, label, stackIndex } = {}) {
@@ -1426,7 +1641,7 @@ function drawTable(id, stacks, own, view) {
       holder.classList.add('revealed-stack');
       for (const card of stack.cards) holder.append(cardNode(card, { mini: true }));
     } else {
-      const enabled = own && gameReady() && !pending && view.legal.tableStacks.includes(stack.index);
+      const enabled = own && gameReady() && !pending && !arranging && view.legal.tableStacks.includes(stack.index);
       const content = stack.card || (stack.count ? { hidden: true } : null);
       holder.append(cardNode(content, {
         enabled, mini: true, stackIndex: enabled ? stack.index : undefined,
@@ -1445,35 +1660,58 @@ function renderPack(view) {
   const order = [leader, otherPlayer(leader), leader, otherPlayer(leader)];
   $('pack-label').textContent = pack ? `PACK ${String(pack.number).padStart(2, '0')} OF 12` : 'THE FIRST PACK AWAITS';
   $('pack-instruction').textContent = view.phase === 'pack_complete'
-    ? `${playerName(view.lastPack.winner)} won this pack and leads next.`
+    ? `${playerName(view.lastPack.winner)} won. The next hand card starts a new pack.`
     : endedGame(view) ? 'All remaining cards are now revealed.'
       : pack?.ledSuit ? `${suitSymbols[pack.ledSuit]} ${suitNames[pack.ledSuit]} led · ${view.contract.mode} wins · ${suitSymbols[view.trump]} trump`
         : view.phase === 'play' ? `${playerName(leader)} leads from their hand.` : 'The bid winner will lead.';
-  const container = $('pack-cards'); container.replaceChildren();
-  for (let i = 0; i < 4; i++) {
-    const slot = document.createElement('div'); slot.className = 'pack-slot';
-    const play = pack?.plays[i];
-    slot.append(cardNode(play?.card || null, { mini: true, label: play ? `${playerName(play.role)} played` : `Play ${i + 1}` }));
-    const label = document.createElement('small'); label.textContent = `${playerName(order[i])} · ${i < 2 ? 'hand' : 'table'}`;
-    slot.append(label); container.append(slot);
+  for (const [id, compact] of [['pack-cards', false], ['live-pack-cards', true]]) {
+    const container = $(id); container.replaceChildren();
+    for (let i = 0; i < 4; i++) {
+      const slot = document.createElement('div'); slot.className = 'pack-slot';
+      const play = pack?.plays[i];
+      const card = cardNode(play?.card || null, { mini: true, label: play ? `${playerName(play.role)} played from ${play.source}` : `Play ${i + 1}` });
+      // Form controls can shrink to their absolute-positioned contents. Give
+      // read-only pack cards an explicit size in both displays.
+      card.style.width = compact ? '42px' : '100%';
+      card.style.height = compact ? '58px' : 'clamp(99px, 13vw, 132px)';
+      slot.append(card);
+      const label = document.createElement('small'); label.textContent = `${playerName(order[i])} · ${i < 2 ? 'hand' : 'table'}`;
+      slot.append(label); container.append(slot);
+    }
   }
+  $('live-pack-bar').hidden = !['play', 'pack_complete'].includes(view.phase) || mode === 'idle';
+  $('live-pack-label').textContent = pack ? `CURRENT PACK · ${pack.number} / 12` : 'CURRENT PACK';
+  $('live-pack-suit').textContent = view.phase === 'pack_complete' ? `${playerName(view.lastPack.winner)} leads next`
+    : pack?.ledSuit ? `${suitSymbols[pack.ledSuit]} ${suitNames[pack.ledSuit]} led` : `${playerName(leader)} leads`;
+  $('last-pack-summary').textContent = view.lastPack ? `Last completed pack: ${view.lastPack.number} · ${playerName(view.lastPack.winner)} won` : 'Played cards appear here after every move.';
 }
 
 function renderHands(view) {
   const oldFocus = document.activeElement?.dataset.card;
   const own = $('own-hand'); own.replaceChildren();
   const discarding = view.legal.canDiscard && gameReady() && !pending;
-  for (const card of view.hand) {
-    const enabled = gameReady() && !pending && (discarding || view.legal.handCards.includes(card.id));
-    own.append(cardNode(card, { enabled, selected: selectedDiscards.has(card.id),
-      onClick: () => discarding ? chooseDiscard(card.id) : act({ type: 'playHand', cardId: card.id }) }));
+  handOrders[view.role] = reconcileHandOrder(handOrders[view.role], view.hand.map(card => card.id));
+  if (selectedOrderCard && !handOrders[view.role].includes(selectedOrderCard)) selectedOrderCard = null;
+  own.classList.toggle('arranging', arranging);
+  const byId = new Map(view.hand.map(card => [card.id, card]));
+  for (const id of handOrders[view.role]) {
+    const card = byId.get(id);
+    const enabled = !pending && (arranging || (gameReady() && (discarding || view.legal.handCards.includes(id))));
+    const node = cardNode(card, { enabled, selected: selectedDiscards.has(id),
+      onClick: () => arranging ? arrangeCardClick(id) : Date.now() < suppressHandClickUntil ? undefined
+        : discarding ? chooseDiscard(id) : act({ type: 'playHand', cardId: id }) });
+    if (arranging) makeArrangeable(node, card, view);
+    own.append(node);
   }
   $('hand-count').textContent = `${view.hand.length} CARDS`;
   $('hand-title').textContent = endedGame(view) ? 'Your remaining cards.' : view.legal.canDiscard ? 'Choose four to discard.' : 'Your private hand.';
   $('hand-eyebrow').textContent = endedGame(view) ? 'REVEALED AT GAME END' : mode === 'practice' ? `LOCAL PRACTICE · ${playerName(view.role).toUpperCase()}’S HAND` : 'VISIBLE ONLY TO YOU';
-  $('hand-instruction').textContent = endedGame(view) ? 'Both players can now inspect the unplayed cards.' : view.legal.canDiscard
+  $('hand-instruction').textContent = arranging ? 'Drag a card to another position, or tap a card and then its destination. Use Move left / right or the arrow keys for small adjustments. Click Done arranging to play.'
+    : endedGame(view) ? 'Both players can now inspect the unplayed cards.' : view.legal.canDiscard
     ? 'Choose any four from your hand and the kitty below, then confirm.'
+    : view.phase === 'pack_complete' && view.activePlayer === view.role ? 'You won the pack. Play any hand card to lead the next one—no extra click needed.'
     : view.legal.handCards.length ? 'Highlighted cards are legal. Follow the led suit whenever you have it.' : 'Your hand stays private. Wait for your hand-play turn.';
+  renderArrangeTools(view);
   const opponent = $('opponent-hand'); opponent.replaceChildren();
   opponent.classList.toggle('revealed', endedGame(view));
   for (const card of view.opponentHand) opponent.append(cardNode(card, { mini: true, label: endedGame(view) ? undefined : 'Opponent’s private card' }));
@@ -1529,8 +1767,8 @@ function renderStage(view) {
     title = yours ? `Your ${source} play.` : `${activeName} plays from their ${source}.`;
     instruction = view.currentPack.ledSuit ? `Follow ${suitNames[view.currentPack.ledSuit]} if available among your ${source === 'hand' ? 'hand cards' : 'exposed table cards'}. If you have none there, any suit is legal.` : 'The leader may play any hand card. Its suit is the led suit for all four plays.';
   } else if (view.phase === 'pack_complete') {
-    title = `${playerName(view.lastPack.winner)} takes the pack.`;
-    instruction = 'Replacement table tops are now revealed. The pack winner leads the next pack.';
+    title = yours ? 'You won. Lead the next pack.' : `${playerName(view.lastPack.winner)} leads next.`;
+    instruction = 'Replacement table tops are revealed. The winner can play any hand card now; the completed pack stays visible until that lead.';
   } else {
     title = view.matchWinner ? `${playerName(view.matchWinner)} wins the match.` : `${playerName(view.result.winner)} wins this game.`;
     instruction = view.matchWinner ? 'Seven or more games won. All remaining cards are revealed for a final look.' : 'All remaining cards and the four discards are revealed. The other player deals the next game.';
@@ -1563,9 +1801,9 @@ function renderStage(view) {
   $('discard-controls').hidden = !view.legal.canDiscard;
   $('discard-counter').textContent = `${selectedDiscards.size} of 4 selected`;
   $('discard-button').disabled = !gameReady() || pending || selectedDiscards.size !== 4;
-  $('next-controls').hidden = !(view.legal.canDeal || view.legal.canContinue || view.legal.canNewMatch);
-  $('next-button').disabled = !gameReady() || pending;
-  $('next-button').textContent = view.legal.canContinue ? 'Lead the next pack →' : view.legal.canNewMatch ? 'Start a new match ↻'
+  $('next-controls').hidden = !(view.legal.canDeal || view.legal.canNewMatch);
+  $('next-button').disabled = !gameReady() || pending || !(view.legal.canDeal || view.legal.canNewMatch);
+  $('next-button').textContent = view.legal.canNewMatch ? 'Start a new match ↻'
     : view.gameNumber ? `Deal game ${view.gameNumber + 1} ↻` : 'Deal the first game ↻';
   $('result-panel').hidden = !view.result;
   if (view.result) {
@@ -1667,6 +1905,8 @@ function reset() {
   operation++;
   try { session?.close(); } catch { /* Reset remains available after transport errors. */ }
   session = null; mode = 'idle'; phase = 'idle'; state = createGame(); inviteLink = ''; guestPresent = false; pending = false; busy = false; selectedDiscards.clear();
+  handOrders = { host: [], guest: [] }; arranging = false; selectedOrderCard = null; draggedOrderCard = null; dragRole = null; arrangeMessage = '';
+  suppressHandClickUntil = 0;
   clearTimeout(pendingTimer); clearTimeout(celebrationTimer); $('celebration').hidden = true; lastCelebration = '';
   clearError();
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
@@ -1680,14 +1920,31 @@ $('practice-button').addEventListener('click', () => {
   announce('Local rehearsal: you control both players. Each turn shows the active player’s view.');
   act({ type: 'deal' });
 });
-$('switch-seat').addEventListener('click', () => { practiceRole = otherPlayer(practiceRole); selectedDiscards.clear(); render(); });
+$('switch-seat').addEventListener('click', () => { practiceRole = otherPlayer(practiceRole); selectedDiscards.clear(); arranging = false; selectedOrderCard = null; arrangeMessage = ''; render(); });
+$('arrange-toggle').addEventListener('click', () => {
+  arranging = !arranging; selectedOrderCard = null; draggedOrderCard = null; dragRole = null; arrangeMessage = '';
+  // Leaving Arrange is an explicit choice to resume play; don't consume the
+  // next intentional click because a recent drag suppressed its own click.
+  suppressHandClickUntil = 0;
+  render();
+});
+for (const [id, sortBy] of [['sort-suit', 'suit'], ['sort-rank', 'rank']]) $(id).addEventListener('click', () => {
+  if (!arranging) return;
+  const role = viewerRole();
+  handOrders[role] = sortHandOrder(handOrders[role], sortBy, state.contract?.mode || 'high');
+  arrangeMessage = `Sorted by ${sortBy}. You can still move individual cards.`; render();
+});
+for (const [id, change] of [['move-left', -1], ['move-right', 1]]) $(id).addEventListener('click', () => {
+  if (!selectedOrderCard) return;
+  const order = handOrders[viewerRole()]; moveLocalCard(selectedOrderCard, order.indexOf(selectedOrderCard) + change);
+});
 $('bid-button').addEventListener('click', () => { const [number, bidMode] = $('bid-select').value.split('-'); act({ type: 'bid', number: Number(number), mode: bidMode }); });
 $('pass-button').addEventListener('click', () => act({ type: 'pass' }));
 for (const suit of ['S', 'H', 'D', 'C']) $(`trump-${suit}`).addEventListener('click', () => act({ type: 'trump', suit }));
 $('discard-button').addEventListener('click', () => act({ type: 'discard', cards: [...selectedDiscards] }));
 $('next-button').addEventListener('click', () => {
   const legal = getPlayerView(state, viewerRole()).legal;
-  act({ type: legal.canContinue ? 'continue' : legal.canNewMatch ? 'newMatch' : 'deal' });
+  act({ type: legal.canNewMatch ? 'newMatch' : 'deal' });
 });
 $('leave-button').addEventListener('click', () => { if (mode === 'practice' || phase === 'ended') reset(); else session?.close(); });
 $('copy-button').addEventListener('click', async () => {

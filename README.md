@@ -5,7 +5,7 @@ this conversation. One browser hosts the session; another joins by invite link.
 The host keeps the authoritative state and validates every move. Both players
 see their own private hands and the shared table.
 
-**Release: v0.4.0.** This replaces the earlier ten-card selection demo. The GitHub
+**Release: v0.5.0.** This replaces the earlier ten-card selection demo. The GitHub
 repository and Pages address can keep their existing `ten-cards` name.
 
 ## Try it without installing anything
@@ -27,7 +27,7 @@ open your computer's file path.
    is the only file needed to update the running website.
 3. Commit to your publishing branch and wait for the Pages deployment to finish
    successfully under **Actions**.
-4. Both players should open the updated website, refresh, and confirm **v0.4.0**
+4. Both players should open the updated website, refresh, and confirm **v0.5.0**
    in the footer. Start a new table and use its new invite link.
 
 Existing sessions use a different message format and cannot be carried into
@@ -51,11 +51,31 @@ because the downloaded homepage is already generated.
 3. The host clicks **Deal the first game**. Bidding starts with the guest.
 4. Follow the stage panel through the auction, trump call, and kitty exchange.
    The panel explains whose turn it is. Enabled cards are legal choices.
-5. After a completed pack, its winner clicks **Lead the next pack**. This pause
-   lets both players inspect the four played cards and newly revealed table tops.
+5. Every played card appears immediately in the shared pack and the compact
+   current-pack strip. That strip stays visible while you scroll to your hand.
+   After a completed pack, its winner simply plays another hand card to lead
+   the next one. The completed four cards stay visible until that new lead.
 6. At game end, inspect all remaining cards and the discards. The next dealer
    clicks **Deal game …**. Scores remain in the same session.
 7. First to seven or more wins the match. The original host can start a new match.
+
+### Arrange your own hand
+
+Click **Arrange hand** to move cards without playing them. You can:
+
+- Drag a card onto the position where you want it.
+- Tap a card to select it, then tap a destination card. This works without drag
+  support on touch devices.
+- Select a card and use **Move left / Move right**, or use the arrow keys while
+  a card has keyboard focus. Home/End move it to the first/last position.
+- Use **Sort by suit** or **Sort by rank**. The rank order follows the current
+  High/Low bid; it defaults to High before the auction is settled.
+
+Click **Done arranging** to return to normal play. Your opponent does not receive
+your display order, and rearranging sends no game action or revision. Existing
+cards retain their relative positions when a card is played or discarded. Kitty
+cards you keep are appended. Each new deal starts a fresh arrangement. You can
+arrange while waiting for the other player's turn too.
 
 Keep the original host's page open. Closing or refreshing it ends the session,
 including when the guest is dealing. A guest connection loss pauses play; a
@@ -124,9 +144,11 @@ single qualifying card among the four decides the pack's winner:
 - High: **A, K, Q, J, 10, 9, …, 2**.
 - Low: **A, 2, 3, 4, 5, …, K**.
 
-The winner leads the next pack. A replacement table top stays covered until all
-four plays finish, then turns face up for both players. Empty stacks cannot be
-played. **Completed packs** records every four-card pack and its winner.
+The winner leads the next pack by playing a hand card directly, without a
+continue button. A replacement table top stays covered until all four plays
+finish, then turns face up for both players. Empty stacks cannot be played.
+The four completed cards remain on the table until the new lead is played.
+**Completed packs** records every four-card pack and its winner.
 
 ### Winning games and the match
 
@@ -182,11 +204,12 @@ Use the branch publication route or the custom workflow, rather than both.
 | `src/view.js` | Information displayed to one seat: private hand, hidden kitty, public tops, end reveal. |
 | `src/session.js` | PeerJS connections, authenticated room admission, authoritative actions, synchronization, and disconnects. |
 | `src/app.js` | Stage controls, cards, match scores, local rehearsal, and result animations. |
+| `src/hand-order.js` | Local display-order reconciliation, manual moves, and suit/rank sorting. |
 | `src/invite.js`, `src/version.js` | Versioned invite links and release identifier. |
 | `src/config.js` | PeerJS location and ICE connection settings. |
 | `tests/` | Rule, privacy, transport, and actual generated-interface regression tests. |
 
-The message protocol is version 3; actions carry the shared revision to reject
+The message protocol is version 4; actions carry the shared revision to reject
 stale or duplicated moves. The host validates actions under the sender's actual
 seat, never an identity supplied in the action. State callbacks are deep copies.
 
@@ -217,14 +240,18 @@ kitty/trump timing, separate-pool suit following, original-led-suit priority,
 high/low trump resolution, all scoring branches, seven-point matches, deep state
 isolation, stale guest actions, disconnects, and 52-card conservation. Interface
 tests drive actual source and generated homepage code through both seats with a
-simulated DOM and Peer transport.
+simulated DOM and Peer transport. Additional regressions cover each individual
+played card appearing before the pack completes, direct next-pack leads, and
+rearrangement that leaves both the shared state and the opponent's order unchanged.
 
 The previous simple game was reported working on the live site. This new full
 game has not yet been tested through actual browsers and external networks in
 the development environment. After publishing, run a two-device acceptance test:
 check both kitty sequences, a low-bid game, forced suit following in both pools,
 a mid-pack stack replacement, an early defender win, dealer rotation, and a
-complete match. Confirm v0.4.0 in both footers before creating the table.
+complete match. Also test dragging or tapping to rearrange cards, and verify the
+current-pack strip remains readable while scrolling. Confirm v0.5.0 in both
+footers before creating the table.
 
 ## License
 

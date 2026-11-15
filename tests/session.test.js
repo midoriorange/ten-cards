@@ -288,6 +288,57 @@ test('dealer winning the auction calls trump before the kitty exchange', async t
   assert.deepEqual(host.state, guest.state);
 });
 
+test('every card play reaches both peers immediately and the pack winner leads without continue', async t => {
+  const hostObserved = [];
+  const guestObserved = [];
+  const { host, guest } = await connectedPair(t, {
+    hostCallbacks: { onState: state => hostObserved.push(state) },
+    guestCallbacks: { onState: state => guestObserved.push(state) },
+  });
+  await reachPlay(host, guest);
+  const played = [];
+  for (let i = 0; i < 4; i++) {
+    const before = host.state;
+    const role = getActivePlayer(before);
+    const legal = getLegalActions(before, role);
+    const action = i < 2
+      ? { type: 'playHand', cardId: legal.handCards[0] }
+      : { type: 'playTable', stackIndex: legal.tableStacks[0] };
+    played.push(i < 2 ? action.cardId : before.table[role][action.stackIndex][0]);
+    await submit(host, guest, role, action);
+    for (const snapshot of [host.state, guest.state, hostObserved.at(-1), guestObserved.at(-1)]) {
+      const visible = snapshot.currentPack ?? snapshot.history.at(-1);
+      assert.equal(visible.number, 1);
+      assert.deepEqual(visible.plays.map(play => play.cardId), played,
+        `both peers display all ${i + 1} played cards before another action`);
+      if (i < 3) {
+        assert.equal(snapshot.phase, 'play');
+        assert.equal(snapshot.history.length, 0);
+      } else {
+        assert.equal(snapshot.phase, 'pack_complete');
+        assert.equal(snapshot.history.length, 1);
+        assert.equal(visible.plays.length, 4);
+      }
+    }
+  }
+
+  const complete = structuredClone(host.state.history[0]);
+  const winner = complete.winner;
+  const cardId = getLegalActions(host.state, winner).handCards[0];
+  assert(host.state.hands[winner].includes(cardId));
+  const revision = host.state.revision;
+  await submit(host, guest, winner, { type: 'playHand', cardId });
+  assert.equal(host.state.revision, revision + 1, 'leading starts the next pack in one action');
+  for (const snapshot of [host.state, guest.state, hostObserved.at(-1), guestObserved.at(-1)]) {
+    assert.equal(snapshot.phase, 'play');
+    assert.equal(snapshot.currentPack.number, 2);
+    assert.equal(snapshot.currentPack.leader, winner);
+    assert.equal(snapshot.currentPack.plays.length, 1);
+    assert.equal(snapshot.currentPack.plays[0].cardId, cardId);
+    assert.deepEqual(snapshot.history, [complete], 'the previous four-card pack remains in history');
+  }
+});
+
 test('authenticated guest cannot forge host actions or replace official state', async t => {
   const guestSnapshots = [];
   const { host, guest, peers, invite } = await connectedPair(t, {
@@ -295,15 +346,15 @@ test('authenticated guest cannot forge host actions or replace official state', 
   });
   const conn = peers.get(invite.hostId).connections[0];
   const before = host.state;
-  conn.emit('data', { v: 3, type: 'action', revision: 0, role: 'host', action: { type: 'deal', role: 'host' } });
-  conn.emit('data', { v: 3, type: 'state', state: { ...before, revision: 100 } });
+  conn.emit('data', { v: 4, type: 'action', revision: 0, role: 'host', action: { type: 'deal', role: 'host' } });
+  conn.emit('data', { v: 4, type: 'state', state: { ...before, revision: 100 } });
   await flush();
   assert.deepEqual(host.state, before);
   assert.deepEqual(guest.state, before);
   assert(guestSnapshots.length > 1, 'invalid action acknowledged with an unchanged snapshot');
   await submit(host, guest, 'host', { type: 'deal' });
   const auction = host.state;
-  conn.emit('data', { v: 3, type: 'action', revision: auction.revision, role: 'host',
+  conn.emit('data', { v: 4, type: 'action', revision: auction.revision, role: 'host',
     action: { type: 'bid', number: 3, mode: 'high', role: 'host' } });
   await flush();
   assert.equal(host.state.revision, auction.revision + 1);
@@ -319,7 +370,7 @@ test('stale and duplicate guest actions acknowledge current state without applyi
   await submit(host, guest, 'host', { type: 'deal' });
   const conn = peers.get(invite.hostId).connections[0];
   const revision = host.state.revision;
-  const bid = { v: 3, type: 'action', revision, action: { type: 'bid', number: 3, mode: 'high' } };
+  const bid = { v: 4, type: 'action', revision, action: { type: 'bid', number: 3, mode: 'high' } };
   conn.emit('data', bid);
   conn.emit('data', bid);
   conn.emit('data', { ...bid, revision: revision - 1 });
@@ -342,9 +393,9 @@ test('malformed and oversized action requests cannot alter official state', asyn
     assert.equal(guest.act(value), false);
   }
   const before = host.state;
-  conn.emit('data', { v: 3, type: 'action', revision: before.revision, action: { type: 'deal', extra: 'x'.repeat(5000) } });
-  conn.emit('data', { v: 3, type: 'action', revision: NaN, action: { type: 'deal' } });
-  conn.emit('data', { v: 3, type: 'action', revision: '0', action: { type: 'deal' } });
+  conn.emit('data', { v: 4, type: 'action', revision: before.revision, action: { type: 'deal', extra: 'x'.repeat(5000) } });
+  conn.emit('data', { v: 4, type: 'action', revision: NaN, action: { type: 'deal' } });
+  conn.emit('data', { v: 4, type: 'action', revision: '0', action: { type: 'deal' } });
   await flush();
   assert.deepEqual(host.state, before);
   assert.deepEqual(guest.state, before);
@@ -460,20 +511,20 @@ test('guest ignores malformed or stale host state snapshots', async t => {
   await submit(host, guest, 'host', { type: 'deal' });
   const before = guest.state;
   const incoming = peers.get(invite.hostId).connections[0].other;
-  incoming.emit('data', { v: 3, type: 'state', state: { ...before, revision: -1 } });
+  incoming.emit('data', { v: 4, type: 'state', state: { ...before, revision: -1 } });
   const malformed = structuredClone(before);
   malformed.hands.host[0] = 'fake-card';
   malformed.revision = 999;
-  incoming.emit('data', { v: 3, type: 'state', state: malformed });
-  incoming.emit('data', { v: 3, type: 'state', state: createGame() });
+  incoming.emit('data', { v: 4, type: 'state', state: malformed });
+  incoming.emit('data', { v: 4, type: 'state', state: createGame() });
   assert.deepEqual(guest.state, before);
 });
 
-test('v1 and v2 guests get compatible version rejection without occupying the seat', async t => {
+test('v1, v2 and v3 guests get compatible version rejection without occupying the seat', async t => {
   const { make, Peer } = fixture(t);
   const host = make();
   const invite = await host.host();
-  for (const version of [1, 2]) {
+  for (const version of [1, 2, 3]) {
     const oldGuest = new Peer();
     t.after(() => oldGuest.destroy());
     const rejected = new Promise(resolve => {

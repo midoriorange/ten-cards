@@ -4,6 +4,7 @@ import { createSession } from './session.js';
 import { makeInviteLink, parseInviteLink } from './invite.js';
 import { peerOptions, peerLibraryUrl } from './config.js';
 import { APP_VERSION } from './version.js';
+import { reconcileHandOrder, moveHandCard, sortHandOrder } from './hand-order.js';
 
 const $ = id => document.getElementById(id);
 const localFile = location.protocol === 'file:';
@@ -26,6 +27,13 @@ let celebrationTimer;
 let lastCelebration = '';
 let selectedDiscards = new Set();
 let lastBidOptions = '';
+let handOrders = { host: [], guest: [] };
+let arranging = false;
+let selectedOrderCard = null;
+let draggedOrderCard = null;
+let dragRole = null;
+let suppressHandClickUntil = 0;
+let arrangeMessage = '';
 
 const playerName = role => role === 'host' ? 'Host' : 'Guest';
 const viewerRole = () => mode === 'practice' ? practiceRole : mode === 'guest' ? 'guest' : 'host';
@@ -77,6 +85,9 @@ function loadPeer() {
 
 function acceptState(next) {
   const changed = next.revision !== state.revision;
+  const newGame = next.gameNumber !== state.gameNumber || next.phase === 'lobby';
+  const oldRole = viewerRole();
+  if (newGame) handOrders = { host: [], guest: [] };
   state = next;
   pending = false;
   clearTimeout(pendingTimer);
@@ -84,11 +95,16 @@ function acceptState(next) {
   if (!next.result) { clearTimeout(celebrationTimer); $('celebration').hidden = true; }
   if (next.phase === 'lobby') lastCelebration = '';
   if (mode === 'practice') practiceRole = getActivePlayer(state) || practiceRole;
+  if (newGame || endedGame(next) || viewerRole() !== oldRole) {
+    arranging = false; selectedOrderCard = null; draggedOrderCard = null; dragRole = null; arrangeMessage = '';
+    suppressHandClickUntil = 0;
+  }
   render();
 }
 
 function act(action) {
   if (!gameReady() || pending) return false;
+  if (arranging && ['playHand', 'playTable'].includes(action.type)) return false;
   clearError();
   if (mode === 'practice') {
     const next = applyAction(state, practiceRole, action);
@@ -117,6 +133,83 @@ function chooseDiscard(cardId) {
   else if (selectedDiscards.size < 4) selectedDiscards.add(cardId);
   else { toast('Choose exactly four cards. Unselect one to change your choice.'); return; }
   render();
+}
+
+function moveLocalCard(cardId, index) {
+  const role = viewerRole();
+  if (!arranging || !handOrders[role].includes(cardId)) return;
+  handOrders[role] = moveHandCard(handOrders[role], cardId, index);
+  selectedOrderCard = cardId;
+  arrangeMessage = `${describeCard(cardId).name} moved to position ${handOrders[role].indexOf(cardId) + 1}.`;
+  render();
+  $('own-hand').querySelector(`[data-card="${cardId}"]`)?.focus({ preventScroll: true });
+}
+
+function arrangeCardClick(cardId) {
+  if (Date.now() < suppressHandClickUntil) return;
+  const order = handOrders[viewerRole()];
+  if (!selectedOrderCard) { selectedOrderCard = cardId; arrangeMessage = 'Choose a destination card, or use Move left / right.'; render(); }
+  else if (selectedOrderCard === cardId) { selectedOrderCard = null; arrangeMessage = ''; render(); }
+  else moveLocalCard(selectedOrderCard, order.indexOf(cardId));
+}
+
+function renderArrangeTools(view) {
+  const allowed = mode !== 'idle' && view.hand.length > 1 && !endedGame(view);
+  $('arrange-toggle').hidden = !allowed;
+  $('arrange-toggle').disabled = pending || !allowed;
+  $('arrange-toggle').textContent = arranging ? 'Done arranging ✓' : 'Arrange hand';
+  $('arrange-toggle').setAttribute('aria-pressed', String(arranging));
+  $('arrange-controls').hidden = !arranging || !allowed;
+  $('arrange-status').textContent = !allowed ? '' : arranging ? (arrangeMessage || 'Arrange mode · moving cards does not play them.') : 'Your arrangement stays on this device.';
+  const index = handOrders[view.role].indexOf(selectedOrderCard);
+  $('move-left').disabled = !arranging || pending || index <= 0;
+  $('move-right').disabled = !arranging || pending || index < 0 || index >= handOrders[view.role].length - 1;
+  $('sort-suit').disabled = !arranging || pending;
+  $('sort-rank').disabled = !arranging || pending;
+  $('sort-rank').title = `Strongest first for ${view.contract?.mode || 'high'} play.`;
+}
+
+function makeArrangeable(node, card, view) {
+  node.draggable = true;
+  node.classList.toggle('arrange-selected', selectedOrderCard === card.id);
+  node.setAttribute('aria-pressed', String(selectedOrderCard === card.id));
+  node.setAttribute('aria-label', `${card.name}, arrange card${selectedOrderCard === card.id ? ', selected to move' : ''}`);
+  node.addEventListener('keydown', event => {
+    if (!arranging || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const order = handOrders[viewerRole()];
+    const index = event.key === 'Home' ? 0 : event.key === 'End' ? order.length - 1
+      : order.indexOf(card.id) + (event.key === 'ArrowLeft' ? -1 : 1);
+    moveLocalCard(card.id, index);
+  });
+  node.addEventListener('dragstart', event => {
+    if (!arranging) { event.preventDefault(); return; }
+    draggedOrderCard = card.id; selectedOrderCard = card.id; dragRole = viewerRole();
+    if (event.dataTransfer) { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', card.id); }
+    for (const child of $('own-hand').children) child.classList.remove('arrange-selected');
+    node.classList.add('dragging', 'arrange-selected');
+    renderArrangeTools(view);
+  });
+  node.addEventListener('dragover', event => {
+    if (!arranging || !draggedOrderCard || dragRole !== viewerRole()) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    node.classList.add('drop-target');
+  });
+  node.addEventListener('dragleave', () => node.classList.remove('drop-target'));
+  node.addEventListener('drop', event => {
+    if (!arranging || !draggedOrderCard || dragRole !== viewerRole()) return;
+    event.preventDefault(); event.stopPropagation();
+    const order = handOrders[viewerRole()];
+    const index = order.indexOf(card.id);
+    const moving = draggedOrderCard;
+    draggedOrderCard = null; dragRole = null;
+    suppressHandClickUntil = Date.now() + 350;
+    if (index >= 0) moveLocalCard(moving, index);
+  });
+  node.addEventListener('dragend', () => {
+    node.classList.remove('dragging', 'drop-target'); draggedOrderCard = null; dragRole = null;
+  });
 }
 
 function cardNode(card, { enabled = false, selected = false, mini = false, onClick, label, stackIndex } = {}) {
@@ -159,7 +252,7 @@ function drawTable(id, stacks, own, view) {
       holder.classList.add('revealed-stack');
       for (const card of stack.cards) holder.append(cardNode(card, { mini: true }));
     } else {
-      const enabled = own && gameReady() && !pending && view.legal.tableStacks.includes(stack.index);
+      const enabled = own && gameReady() && !pending && !arranging && view.legal.tableStacks.includes(stack.index);
       const content = stack.card || (stack.count ? { hidden: true } : null);
       holder.append(cardNode(content, {
         enabled, mini: true, stackIndex: enabled ? stack.index : undefined,
@@ -178,35 +271,58 @@ function renderPack(view) {
   const order = [leader, otherPlayer(leader), leader, otherPlayer(leader)];
   $('pack-label').textContent = pack ? `PACK ${String(pack.number).padStart(2, '0')} OF 12` : 'THE FIRST PACK AWAITS';
   $('pack-instruction').textContent = view.phase === 'pack_complete'
-    ? `${playerName(view.lastPack.winner)} won this pack and leads next.`
+    ? `${playerName(view.lastPack.winner)} won. The next hand card starts a new pack.`
     : endedGame(view) ? 'All remaining cards are now revealed.'
       : pack?.ledSuit ? `${suitSymbols[pack.ledSuit]} ${suitNames[pack.ledSuit]} led · ${view.contract.mode} wins · ${suitSymbols[view.trump]} trump`
         : view.phase === 'play' ? `${playerName(leader)} leads from their hand.` : 'The bid winner will lead.';
-  const container = $('pack-cards'); container.replaceChildren();
-  for (let i = 0; i < 4; i++) {
-    const slot = document.createElement('div'); slot.className = 'pack-slot';
-    const play = pack?.plays[i];
-    slot.append(cardNode(play?.card || null, { mini: true, label: play ? `${playerName(play.role)} played` : `Play ${i + 1}` }));
-    const label = document.createElement('small'); label.textContent = `${playerName(order[i])} · ${i < 2 ? 'hand' : 'table'}`;
-    slot.append(label); container.append(slot);
+  for (const [id, compact] of [['pack-cards', false], ['live-pack-cards', true]]) {
+    const container = $(id); container.replaceChildren();
+    for (let i = 0; i < 4; i++) {
+      const slot = document.createElement('div'); slot.className = 'pack-slot';
+      const play = pack?.plays[i];
+      const card = cardNode(play?.card || null, { mini: true, label: play ? `${playerName(play.role)} played from ${play.source}` : `Play ${i + 1}` });
+      // Form controls can shrink to their absolute-positioned contents. Give
+      // read-only pack cards an explicit size in both displays.
+      card.style.width = compact ? '42px' : '100%';
+      card.style.height = compact ? '58px' : 'clamp(99px, 13vw, 132px)';
+      slot.append(card);
+      const label = document.createElement('small'); label.textContent = `${playerName(order[i])} · ${i < 2 ? 'hand' : 'table'}`;
+      slot.append(label); container.append(slot);
+    }
   }
+  $('live-pack-bar').hidden = !['play', 'pack_complete'].includes(view.phase) || mode === 'idle';
+  $('live-pack-label').textContent = pack ? `CURRENT PACK · ${pack.number} / 12` : 'CURRENT PACK';
+  $('live-pack-suit').textContent = view.phase === 'pack_complete' ? `${playerName(view.lastPack.winner)} leads next`
+    : pack?.ledSuit ? `${suitSymbols[pack.ledSuit]} ${suitNames[pack.ledSuit]} led` : `${playerName(leader)} leads`;
+  $('last-pack-summary').textContent = view.lastPack ? `Last completed pack: ${view.lastPack.number} · ${playerName(view.lastPack.winner)} won` : 'Played cards appear here after every move.';
 }
 
 function renderHands(view) {
   const oldFocus = document.activeElement?.dataset.card;
   const own = $('own-hand'); own.replaceChildren();
   const discarding = view.legal.canDiscard && gameReady() && !pending;
-  for (const card of view.hand) {
-    const enabled = gameReady() && !pending && (discarding || view.legal.handCards.includes(card.id));
-    own.append(cardNode(card, { enabled, selected: selectedDiscards.has(card.id),
-      onClick: () => discarding ? chooseDiscard(card.id) : act({ type: 'playHand', cardId: card.id }) }));
+  handOrders[view.role] = reconcileHandOrder(handOrders[view.role], view.hand.map(card => card.id));
+  if (selectedOrderCard && !handOrders[view.role].includes(selectedOrderCard)) selectedOrderCard = null;
+  own.classList.toggle('arranging', arranging);
+  const byId = new Map(view.hand.map(card => [card.id, card]));
+  for (const id of handOrders[view.role]) {
+    const card = byId.get(id);
+    const enabled = !pending && (arranging || (gameReady() && (discarding || view.legal.handCards.includes(id))));
+    const node = cardNode(card, { enabled, selected: selectedDiscards.has(id),
+      onClick: () => arranging ? arrangeCardClick(id) : Date.now() < suppressHandClickUntil ? undefined
+        : discarding ? chooseDiscard(id) : act({ type: 'playHand', cardId: id }) });
+    if (arranging) makeArrangeable(node, card, view);
+    own.append(node);
   }
   $('hand-count').textContent = `${view.hand.length} CARDS`;
   $('hand-title').textContent = endedGame(view) ? 'Your remaining cards.' : view.legal.canDiscard ? 'Choose four to discard.' : 'Your private hand.';
   $('hand-eyebrow').textContent = endedGame(view) ? 'REVEALED AT GAME END' : mode === 'practice' ? `LOCAL PRACTICE · ${playerName(view.role).toUpperCase()}’S HAND` : 'VISIBLE ONLY TO YOU';
-  $('hand-instruction').textContent = endedGame(view) ? 'Both players can now inspect the unplayed cards.' : view.legal.canDiscard
+  $('hand-instruction').textContent = arranging ? 'Drag a card to another position, or tap a card and then its destination. Use Move left / right or the arrow keys for small adjustments. Click Done arranging to play.'
+    : endedGame(view) ? 'Both players can now inspect the unplayed cards.' : view.legal.canDiscard
     ? 'Choose any four from your hand and the kitty below, then confirm.'
+    : view.phase === 'pack_complete' && view.activePlayer === view.role ? 'You won the pack. Play any hand card to lead the next one—no extra click needed.'
     : view.legal.handCards.length ? 'Highlighted cards are legal. Follow the led suit whenever you have it.' : 'Your hand stays private. Wait for your hand-play turn.';
+  renderArrangeTools(view);
   const opponent = $('opponent-hand'); opponent.replaceChildren();
   opponent.classList.toggle('revealed', endedGame(view));
   for (const card of view.opponentHand) opponent.append(cardNode(card, { mini: true, label: endedGame(view) ? undefined : 'Opponent’s private card' }));
@@ -262,8 +378,8 @@ function renderStage(view) {
     title = yours ? `Your ${source} play.` : `${activeName} plays from their ${source}.`;
     instruction = view.currentPack.ledSuit ? `Follow ${suitNames[view.currentPack.ledSuit]} if available among your ${source === 'hand' ? 'hand cards' : 'exposed table cards'}. If you have none there, any suit is legal.` : 'The leader may play any hand card. Its suit is the led suit for all four plays.';
   } else if (view.phase === 'pack_complete') {
-    title = `${playerName(view.lastPack.winner)} takes the pack.`;
-    instruction = 'Replacement table tops are now revealed. The pack winner leads the next pack.';
+    title = yours ? 'You won. Lead the next pack.' : `${playerName(view.lastPack.winner)} leads next.`;
+    instruction = 'Replacement table tops are revealed. The winner can play any hand card now; the completed pack stays visible until that lead.';
   } else {
     title = view.matchWinner ? `${playerName(view.matchWinner)} wins the match.` : `${playerName(view.result.winner)} wins this game.`;
     instruction = view.matchWinner ? 'Seven or more games won. All remaining cards are revealed for a final look.' : 'All remaining cards and the four discards are revealed. The other player deals the next game.';
@@ -296,9 +412,9 @@ function renderStage(view) {
   $('discard-controls').hidden = !view.legal.canDiscard;
   $('discard-counter').textContent = `${selectedDiscards.size} of 4 selected`;
   $('discard-button').disabled = !gameReady() || pending || selectedDiscards.size !== 4;
-  $('next-controls').hidden = !(view.legal.canDeal || view.legal.canContinue || view.legal.canNewMatch);
-  $('next-button').disabled = !gameReady() || pending;
-  $('next-button').textContent = view.legal.canContinue ? 'Lead the next pack →' : view.legal.canNewMatch ? 'Start a new match ↻'
+  $('next-controls').hidden = !(view.legal.canDeal || view.legal.canNewMatch);
+  $('next-button').disabled = !gameReady() || pending || !(view.legal.canDeal || view.legal.canNewMatch);
+  $('next-button').textContent = view.legal.canNewMatch ? 'Start a new match ↻'
     : view.gameNumber ? `Deal game ${view.gameNumber + 1} ↻` : 'Deal the first game ↻';
   $('result-panel').hidden = !view.result;
   if (view.result) {
@@ -400,6 +516,8 @@ function reset() {
   operation++;
   try { session?.close(); } catch { /* Reset remains available after transport errors. */ }
   session = null; mode = 'idle'; phase = 'idle'; state = createGame(); inviteLink = ''; guestPresent = false; pending = false; busy = false; selectedDiscards.clear();
+  handOrders = { host: [], guest: [] }; arranging = false; selectedOrderCard = null; draggedOrderCard = null; dragRole = null; arrangeMessage = '';
+  suppressHandClickUntil = 0;
   clearTimeout(pendingTimer); clearTimeout(celebrationTimer); $('celebration').hidden = true; lastCelebration = '';
   clearError();
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
@@ -413,14 +531,31 @@ $('practice-button').addEventListener('click', () => {
   announce('Local rehearsal: you control both players. Each turn shows the active player’s view.');
   act({ type: 'deal' });
 });
-$('switch-seat').addEventListener('click', () => { practiceRole = otherPlayer(practiceRole); selectedDiscards.clear(); render(); });
+$('switch-seat').addEventListener('click', () => { practiceRole = otherPlayer(practiceRole); selectedDiscards.clear(); arranging = false; selectedOrderCard = null; arrangeMessage = ''; render(); });
+$('arrange-toggle').addEventListener('click', () => {
+  arranging = !arranging; selectedOrderCard = null; draggedOrderCard = null; dragRole = null; arrangeMessage = '';
+  // Leaving Arrange is an explicit choice to resume play; don't consume the
+  // next intentional click because a recent drag suppressed its own click.
+  suppressHandClickUntil = 0;
+  render();
+});
+for (const [id, sortBy] of [['sort-suit', 'suit'], ['sort-rank', 'rank']]) $(id).addEventListener('click', () => {
+  if (!arranging) return;
+  const role = viewerRole();
+  handOrders[role] = sortHandOrder(handOrders[role], sortBy, state.contract?.mode || 'high');
+  arrangeMessage = `Sorted by ${sortBy}. You can still move individual cards.`; render();
+});
+for (const [id, change] of [['move-left', -1], ['move-right', 1]]) $(id).addEventListener('click', () => {
+  if (!selectedOrderCard) return;
+  const order = handOrders[viewerRole()]; moveLocalCard(selectedOrderCard, order.indexOf(selectedOrderCard) + change);
+});
 $('bid-button').addEventListener('click', () => { const [number, bidMode] = $('bid-select').value.split('-'); act({ type: 'bid', number: Number(number), mode: bidMode }); });
 $('pass-button').addEventListener('click', () => act({ type: 'pass' }));
 for (const suit of ['S', 'H', 'D', 'C']) $(`trump-${suit}`).addEventListener('click', () => act({ type: 'trump', suit }));
 $('discard-button').addEventListener('click', () => act({ type: 'discard', cards: [...selectedDiscards] }));
 $('next-button').addEventListener('click', () => {
   const legal = getPlayerView(state, viewerRole()).legal;
-  act({ type: legal.canContinue ? 'continue' : legal.canNewMatch ? 'newMatch' : 'deal' });
+  act({ type: legal.canNewMatch ? 'newMatch' : 'deal' });
 });
 $('leave-button').addEventListener('click', () => { if (mode === 'practice' || phase === 'ended') reset(); else session?.close(); });
 $('copy-button').addEventListener('click', async () => {

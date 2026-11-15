@@ -5,6 +5,7 @@ import { EventEmitter } from 'node:events';
 import vm from 'node:vm';
 import { APP_VERSION } from '../src/version.js';
 import { describeCard } from '../src/game.js';
+import { moveHandCard, sortHandOrder } from '../src/hand-order.js';
 
 const root = new URL('../', import.meta.url);
 const flush = () => new Promise(resolve => setImmediate(resolve));
@@ -58,13 +59,13 @@ function createDocument(html) {
       if (!this.events.has(name)) this.events.set(name, []);
       this.events.get(name).push(listener);
     }
-    async fire(name) {
+    async fire(name, properties = {}) {
       if (name === 'click') {
         assert.equal(this.disabled, false, 'the tested control must be enabled');
         assert.equal(this.hidden, false, 'the tested control must be visible');
         this.focus();
       }
-      const event = { preventDefault() {} };
+      const event = { target: this, currentTarget: this, preventDefault() {}, stopPropagation() {}, ...properties };
       await Promise.all((this.events.get(name) || []).map(listener => listener(event)));
       await flush();
     }
@@ -111,11 +112,13 @@ function fakeNetwork() {
   const peers = new Map();
   let sequence = 0;
   let latestState = null;
+  let actionCount = 0;
   class Connection extends EventEmitter {
     constructor() { super(); this.open = false; this.other = null; }
     send(value) {
       if (!this.open) throw new Error('Closed data channel');
       const copied = structuredClone(value);
+      if (copied.type === 'action') actionCount += 1;
       if (copied.state) latestState = structuredClone(copied.state);
       queueMicrotask(() => { if (this.other.open) this.other.emit('data', copied); });
     }
@@ -164,12 +167,12 @@ function fakeNetwork() {
       this.emit('close');
     }
   }
-  return { Peer, get state() { return latestState; } };
+  return { Peer, get state() { return latestState; }, get actionCount() { return actionCount; } };
 }
 
 async function loadAppSource() {
   const sources = [];
-  for (const name of ['version', 'game', 'view', 'session', 'invite', 'config', 'app']) {
+  for (const name of ['version', 'game', 'view', 'hand-order', 'session', 'invite', 'config', 'app']) {
     let source = await readFile(new URL(`src/${name}.js`, root), 'utf8');
     const exports = [...source.matchAll(/^export (?:const|function) (\w+)/gm)].map(match => match[1]);
     source = source.replace(/^import \{([^}]+)\} from ['"]\.\/([\w-]+)\.js['"];\r?\n/gm,
@@ -254,6 +257,125 @@ function assertPrivateCards(apps, state) {
     }
   }
 }
+function handOrder(app) { return faceNodes(app.get('own-hand')).map(node => node.dataset.card); }
+function handNode(app, id) {
+  const node = faceNodes(app.get('own-hand')).find(card => card.dataset.card === id);
+  assert(node, `The hand must still contain ${id}`);
+  return node;
+}
+async function assertLocalArrangement(app, opponent, network, bidMode = 'high') {
+  const original = handOrder(app);
+  const otherOrder = handOrder(opponent);
+  const revision = network.state.revision;
+  const remoteActions = network.actionCount;
+  async function resetSelection() {
+    await app.get('arrange-toggle').fire('click');
+    await app.get('arrange-toggle').fire('click');
+  }
+  function assertLocal(expected) {
+    assert.deepEqual(handOrder(app), expected);
+    assert.deepEqual(handOrder(opponent), otherOrder, 'Reordering must not rearrange the other participant’s hand');
+    assert.equal(network.state.revision, revision, 'Arrangement never submits a game move');
+    assert.equal(network.actionCount, remoteActions, 'Arrangement never sends a remote action');
+    assert.equal(app.get('error-panel').hidden, true);
+  }
+
+  await app.get('arrange-toggle').fire('click');
+  assert.equal(app.get('arrange-controls').hidden, false);
+  assert.match(app.get('arrange-toggle').textContent, /Done arranging/i);
+  await handNode(app, original[0]).fire('click');
+  await handNode(app, original[3]).fire('click');
+  let expected = moveHandCard(original, original[0], 3);
+  assertLocal(expected);
+
+  await resetSelection();
+  await handNode(app, original[0]).fire('click');
+  await app.get('move-left').fire('click');
+  expected = moveHandCard(expected, original[0], 2);
+  assertLocal(expected);
+  await app.get('move-right').fire('click');
+  expected = moveHandCard(expected, original[0], 3);
+  assertLocal(expected);
+  await handNode(app, original[0]).fire('keydown', { key: 'ArrowLeft' });
+  expected = moveHandCard(expected, original[0], 2);
+  assertLocal(expected);
+  await handNode(app, original[0]).fire('keydown', { key: 'ArrowRight' });
+  expected = moveHandCard(expected, original[0], 3);
+  assertLocal(expected);
+
+  await resetSelection();
+  const draggedId = expected[0];
+  const targetId = expected.at(-1);
+  const data = new Map();
+  const dataTransfer = {
+    setData(type, value) { data.set(type, value); },
+    getData(type) { return data.get(type) || ''; },
+  };
+  const draggedNode = handNode(app, draggedId);
+  await draggedNode.fire('dragstart', { dataTransfer });
+  await handNode(app, targetId).fire('dragover', { dataTransfer });
+  await handNode(app, targetId).fire('drop', { dataTransfer });
+  await draggedNode.fire('dragend', { dataTransfer });
+  expected = moveHandCard(expected, draggedId, expected.length - 1);
+  assertLocal(expected);
+  // A synthetic click sometimes follows a drop. It must not move/play again.
+  await handNode(app, targetId).fire('click');
+  assertLocal(expected);
+
+  await app.get('sort-suit').fire('click');
+  expected = sortHandOrder(expected, 'suit', bidMode);
+  assertLocal(expected);
+  await app.get('sort-rank').fire('click');
+  expected = sortHandOrder(expected, 'rank', bidMode);
+  assertLocal(expected);
+  await app.get('arrange-toggle').fire('click');
+  assert.equal(app.get('arrange-controls').hidden, true);
+  assertLocal(expected);
+  return expected;
+}
+async function assertTablePlayPausedByArrangement(app, network) {
+  const tableCard = legalCards(app.get('own-table'))[0];
+  assert(tableCard, 'This regression starts during a legal table-card turn');
+  const originalOrder = handOrder(app);
+  const revision = network.state.revision;
+  const remoteActions = network.actionCount;
+  await app.get('arrange-toggle').fire('click');
+  assert.equal(legalCards(app.get('own-table')).length, 0,
+    'Arrange mode disables every table-card play control');
+  // Also exercise the action guard behind a previously rendered event handler.
+  await tableCard.fire('click');
+  assert.equal(network.state.revision, revision);
+  assert.equal(network.actionCount, remoteActions);
+  await handNode(app, originalOrder[0]).fire('click');
+  await handNode(app, originalOrder[1]).fire('click');
+  assert.deepEqual(handOrder(app), moveHandCard(originalOrder, originalOrder[0], 1));
+  assert.equal(network.state.revision, revision, 'Reordering during a table turn does not play anything');
+  assert.equal(network.actionCount, remoteActions);
+  await app.get('arrange-toggle').fire('click');
+  assert(legalCards(app.get('own-table')).some(card => card.dataset.card === tableCard.dataset.card),
+    'Done arranging restores the legal table play immediately');
+}
+function assertPackDisplays(apps, state) {
+  const pack = state.currentPack || (['pack_complete', 'game_over', 'match_over'].includes(state.phase)
+    ? state.history.at(-1) : null);
+  const expected = pack?.plays.map(play => play.cardId) || [];
+  for (const app of Object.values(apps)) {
+    const main = faceNodes(app.get('pack-cards'));
+    const compact = faceNodes(app.get('live-pack-cards'));
+    assert.deepEqual(main.map(card => card.dataset.card), expected,
+      'Every individual play must immediately appear on the main table');
+    assert.deepEqual(compact.map(card => card.dataset.card), expected,
+      'Every individual play must immediately appear in the sticky live pack');
+    for (const card of main) {
+      assert.equal(card.style.width, '100%');
+      assert.equal(card.style.height, 'clamp(99px, 13vw, 132px)');
+    }
+    for (const card of compact) {
+      assert.equal(card.style.width, '42px');
+      assert.equal(card.style.height, '58px');
+    }
+  }
+}
 async function discardKitty(app) {
   assert.equal(app.get('discard-controls').hidden, false);
   assert.equal(app.get('discard-button').disabled, true);
@@ -265,27 +387,59 @@ async function discardKitty(app) {
   assert.match(app.get('discard-counter').textContent, /4/);
   await app.get('discard-button').fire('click');
 }
-async function finishGame(apps, network) {
+async function finishGame(apps, network, coverage) {
   let steps = 0;
   while (!['game_over', 'match_over'].includes(network.state.phase)) {
     assert(steps++ < 100, 'A game should finish within twelve four-card packs');
     const before = network.state;
     assertPrivateCards(apps, before);
+    assertPackDisplays(apps, before);
+    if (!coverage.tableArrangement && before.phase === 'play') {
+      const app = Object.values(apps).find(candidate => legalCards(candidate.get('own-table')).length);
+      if (app) {
+        await assertTablePlayPausedByArrangement(app, network);
+        coverage.tableArrangement = true;
+      }
+    }
+    const oldOrders = Object.fromEntries(Object.entries(apps).map(([role, app]) => [role, handOrder(app)]));
+    let actor;
+    let chosenId;
+    let playedFromHand = false;
     if (before.phase === 'pack_complete') {
-      const app = Object.values(apps).find(candidate => !candidate.get('next-controls').hidden
-        && !candidate.get('next-button').disabled);
-      assert(app, 'The pack winner must have a continue action');
-      await app.get('next-button').fire('click');
+      for (const app of Object.values(apps)) {
+        assert.equal(app.get('next-controls').hidden, true, 'No separate continue click is required');
+        assert.equal(faceNodes(app.get('pack-cards')).length, 4,
+          'The completed pack stays visible until the next lead is actually played');
+      }
+      actor = before.history.at(-1).winner;
+      const card = legalCards(apps[actor].get('own-hand'))[0];
+      assert(card, 'The pack winner can lead directly from a legal hand card');
+      chosenId = card.dataset.card;
+      playedFromHand = true;
+      await card.fire('click');
+      assert.equal(network.state.phase, 'play');
+      assert.equal(network.state.currentPack.plays.length, 1);
+      assert.equal(network.state.currentPack.plays[0].cardId, chosenId);
     } else {
       assert.equal(before.phase, 'play');
       let acted = false;
-      for (const app of Object.values(apps)) {
-        const card = legalCards(app.get('own-hand'))[0] || legalCards(app.get('own-table'))[0];
-        if (card) { await card.fire('click'); acted = true; break; }
+      for (const [role, app] of Object.entries(apps)) {
+        const handCard = legalCards(app.get('own-hand'))[0];
+        const card = handCard || legalCards(app.get('own-table'))[0];
+        if (card) {
+          actor = role; chosenId = card.dataset.card; playedFromHand = Boolean(handCard);
+          await card.fire('click'); acted = true; break;
+        }
       }
       assert(acted, 'The active player must have a legal hand or table card');
     }
     assert(network.state.revision > before.revision, 'Every UI action must reach the shared state');
+    assertPackDisplays(apps, network.state);
+    for (const [role, app] of Object.entries(apps)) {
+      const expected = playedFromHand && role === actor ? oldOrders[role].filter(id => id !== chosenId) : oldOrders[role];
+      assert.deepEqual(handOrder(app), expected,
+        'Remote updates preserve local hand order; a hand play removes only the played card');
+    }
   }
   assertPrivateCards(apps, network.state);
   for (const app of Object.values(apps)) assert.equal(app.get('result-panel').hidden, false);
@@ -296,6 +450,7 @@ async function assertFullGameUi(t, html, source) {
   const host = createApp(html, source, network.Peer);
   const guest = createApp(html, source, network.Peer);
   const apps = { host, guest };
+  const coverage = { tableArrangement: false };
   t.after(() => { host.close(); guest.close(); });
   assert.equal(host.get('build-label').textContent, `v${APP_VERSION}`);
   assert.equal(guest.get('build-label').textContent, `v${APP_VERSION}`);
@@ -314,8 +469,10 @@ async function assertFullGameUi(t, html, source) {
   assert.equal(faceNodes(host.get('own-hand')).length, 12);
   assert.equal(faceNodes(guest.get('own-hand')).length, 12);
   assertPrivateCards(apps, network.state);
+  const arrangedHostHand = await assertLocalArrangement(host, guest, network);
   guest.get('bid-select').value = '3-high';
   await guest.get('bid-button').fire('click');
+  assert.deepEqual(handOrder(host), arrangedHostHand, 'An opponent’s bid preserves the locally arranged hand');
   assert.match(host.get('auction-history').textContent, /Guest.*3 High/);
   await host.get('pass-button').fire('click');
   assert.equal(network.state.phase, 'kitty');
@@ -330,7 +487,9 @@ async function assertFullGameUi(t, html, source) {
   await guest.get('trump-H').fire('click');
   assert.equal(network.state.phase, 'play');
   assert.equal(network.state.trump, 'H');
-  await finishGame(apps, network);
+  assert.deepEqual(handOrder(host), arrangedHostHand, 'Kitty and trump updates preserve the other hand’s local order');
+  await assertLocalArrangement(guest, host, network);
+  await finishGame(apps, network, coverage);
   assert.equal(network.state.games.length, 1);
   const firstScore = network.state.scores.host + network.state.scores.guest;
   assert(firstScore === 1 || firstScore === 2);
@@ -342,7 +501,7 @@ async function assertFullGameUi(t, html, source) {
   await host.get('pass-button').fire('click');
   assert.equal(guest.get('pass-button').disabled || guest.get('pass-button').hidden, true,
     'The dealer must bid when the opener passes');
-  guest.get('bid-select').value = '3-high';
+  guest.get('bid-select').value = '3-low';
   await guest.get('bid-button').fire('click');
   assert.equal(network.state.phase, 'trump_before');
   assert.equal(faceNodes(guest.get('kitty-cards')).length, 0,
@@ -353,9 +512,11 @@ async function assertFullGameUi(t, html, source) {
   assert.equal(faceNodes(guest.get('kitty-cards')).length, 4);
   await discardKitty(guest);
   assert.equal(network.state.phase, 'play');
-  await finishGame(apps, network);
+  await assertLocalArrangement(guest, host, network, 'low');
+  await finishGame(apps, network, coverage);
   assert.equal(network.state.games.length, 2);
   assert(network.state.scores.host + network.state.scores.guest > firstScore);
+  assert.equal(coverage.tableArrangement, true, 'The table-turn arrangement regression was exercised');
   for (const app of Object.values(apps)) {
     assert.equal(Number(app.get('host-score').textContent), network.state.scores.host);
     assert.equal(Number(app.get('guest-score').textContent), network.state.scores.guest);

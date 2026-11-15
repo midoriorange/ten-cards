@@ -10,7 +10,7 @@
  */
 import { createGame, applyAction, isValidState } from './game.js';
 
-const VERSION = 3;
+const VERSION = 4;
 const HOST_ID = /^ten-[a-f0-9]{32}$/;
 const SECRET = /^[a-f0-9]{32}$/;
 const noop = () => {};
@@ -230,9 +230,9 @@ export function createSession({
       if (closed) return;
       if (conn !== connection && pending.has(conn) && packetShape(data) &&
         data.type === 'hello' && data.v !== VERSION) {
-        // Reply using either older supported envelope so those clients receive
+        // Reply using an older supported envelope so those clients receive
         // a reject they understand, rather than waiting for an unknown protocol.
-        reject(conn, 'version-mismatch', data.v === 1 || data.v === 2 ? data.v : VERSION);
+        reject(conn, 'version-mismatch', [1, 2, 3].includes(data.v) ? data.v : VERSION);
         return;
       }
       if (!validPacket(data)) return;
