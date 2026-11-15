@@ -4,7 +4,7 @@ import vm from 'node:vm';
 const root = new URL('../', import.meta.url);
 const css = await readFile(new URL('styles.css', root), 'utf8');
 const icon = await readFile(new URL('favicon.svg', root));
-const modules = ['game', 'session', 'invite', 'config', 'app'];
+const modules = ['game', 'view', 'session', 'invite', 'config', 'app'];
 const sources = [];
 for (const name of modules) {
   let code = await readFile(new URL(`src/${name}.js`, root), 'utf8');

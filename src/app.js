@@ -2,6 +2,7 @@ import { createGame, dealCards, describeCard, selectCard, getNextDealer, canDeal
 import { createSession } from './session.js';
 import { makeInviteLink, parseInviteLink } from './invite.js';
 import { peerOptions, peerLibraryUrl } from './config.js';
+import { getCardViews } from './view.js';
 
 const $ = (id) => document.getElementById(id);
 const localFile = location.protocol === 'file:';
@@ -98,7 +99,10 @@ function act(kind, cardId) {
 function renderCards() {
   const selectable = (mode === 'practice' || (phase === 'connected' && canSelect(state, mode)))
     && !pending && !state.selectedCard;
-  const key = JSON.stringify([state.cards, state.selectedCard, selectable]);
+  // Practice plays the chooser's side so one person can still try selection.
+  const viewer = mode === 'practice' ? (state.dealer === 'host' ? 'guest' : 'host') : mode;
+  const cards = state.cards.length ? getCardViews(state, viewer) : [];
+  const key = JSON.stringify([cards, selectable]);
   if (cardsRenderKey === key) return;
   cardsRenderKey = key;
   const grid = $('cards-grid');
@@ -113,9 +117,16 @@ function renderCards() {
     }
     return;
   }
-  for (const id of state.cards) {
-    const card = describeCard(id);
-    const selected = state.selectedCard === id;
+  for (const card of cards) {
+    if (!card.faceUp) {
+      const back = document.createElement('div');
+      back.className = 'card-back dealt-back';
+      back.setAttribute('role', 'img');
+      back.setAttribute('aria-label', `Face-down card ${card.position}`);
+      grid.append(back);
+      continue;
+    }
+    const { id, selected } = card;
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `playing-card ${card.color}${selected ? ' selected' : ''}`;
@@ -162,6 +173,7 @@ function render() {
   const dealerName = state.dealer === 'host' ? 'Host' : 'Guest';
   const nextDealerName = nextDealer === 'host' ? 'Host' : 'Guest';
   const chooserName = chooser === 'host' ? 'Host' : 'Guest';
+  const isDealer = mode === state.dealer;
   const waitingForGuest = host && phase === 'waiting' && !guestPresent;
   const roleHint = role => {
     const identity = mode === role ? 'You' : 'Your friend';
@@ -198,11 +210,11 @@ function render() {
   if (ended) guidance = 'This session has ended. Start a fresh table to play again.';
   else if (connecting) guidance = host ? 'Preparing your invite link. Keep this page open.' : 'Connecting to your host. Keep this page open.';
   else if (paused) guidance = 'The connection was interrupted. Wait for it to recover before dealing or choosing.';
-  else if (practice) guidance = 'Play both sides here. After each choice, the deal passes to the other player.';
+  else if (practice) guidance = 'Practice shows the chooser’s view. In a two-player game, the dealer sees card backs until a choice reveals one.';
   else if (waitingForGuest) guidance = !state.round ? 'Invite your friend. You can deal the first hand while you wait.' : 'Waiting for your friend to join. Their place in the current hand is saved.';
   else if (state.selectedCard) guidance = myDeal ? 'Your choice is recorded. Deal the next hand for your friend.' : 'Your friend can now deal the next hand for you.';
   else if (myChoice) guidance = 'Choose one card. Then you can deal the next hand.';
-  else if (state.round) guidance = 'Your friend is choosing a card. You can re-deal before they choose.';
+  else if (state.round) guidance = 'Your friend sees the card faces. Your cards stay face down until their choice reveals one.';
   else guidance = myDeal ? 'Deal ten cards for your friend to choose from.' : 'Your friend will deal the first hand. The cards will appear here.';
   if (host && !ended && !connecting) guidance += ' Keep this page open to keep the game going.';
   $('session-guidance').textContent = guidance;
@@ -213,6 +225,9 @@ function render() {
   $('felt').classList.toggle('empty', !state.cards.length);
   $('felt').classList.toggle('ended', ended);
   $('table-empty').hidden = Boolean(state.cards.length);
+  $('cards-grid').setAttribute('aria-label', !state.cards.length ? 'Waiting for ten cards'
+    : isDealer ? (state.selectedCard ? 'One selected card revealed; nine cards face down' : 'Ten face-down cards')
+      : 'Ten face-up cards');
   $('empty-title').textContent = ended ? 'The table is closed.' : connecting ? 'Connecting your table…' : mode === 'guest' ? 'Take a little seat.' : active ? 'Your table is ready.' : 'Ready when you are.';
   $('empty-copy').textContent = ended ? 'Start a new game for a fresh deal.' : connecting
     ? (host ? 'Setting up your invite link. Please wait.' : 'Waiting for your host to accept the connection.')
@@ -221,7 +236,7 @@ function render() {
   $('table-instruction').textContent = ended ? 'This game has ended.' : paused ? 'Connection interrupted. The game is paused.' : pending ? (pending === 'deal' ? 'Dealing the next hand…' : 'Confirming your choice…')
     : waitingForGuest && state.round ? 'Waiting for your friend to join the table.'
     : state.selectedCard ? (practice ? `${nextDealerName} deals next. You can play that side, too.` : myDeal ? 'Your turn to deal the next hand.' : `${nextDealerName} can now deal the next hand for you.`) : state.cards.length
-    ? (myChoice ? 'Pick the card that catches your eye.' : `${chooserName} can choose one of these cards.`)
+    ? (myChoice ? 'Pick the card that catches your eye.' : 'Your friend’s choice will reveal one card here.')
     : 'A full deck. A fresh deal. A shared moment.';
   $('selection-copy').textContent = state.selectedCard
     ? `Selected: ${describeCard(state.selectedCard).name}.`

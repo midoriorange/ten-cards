@@ -450,6 +450,25 @@ input::placeholder {
   border-radius:3px;
   background:repeating-linear-gradient(45deg,transparent 0 6px,#8bab7913 6px 7px);
 }
+.card-back.dealt-back {
+  background:#285243;
+  border-color:#6d8e67;
+  opacity:1;
+  box-shadow:0 3px 5px #09261f38;
+}
+.dealt-back:after {
+  border-color:#afbe937a;
+  background:repeating-linear-gradient(45deg,transparent 0 6px,#c7d1a317 6px 7px);
+}
+.dealt-back:before {
+  content:"◇";
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  font:38px var(--serif);
+  color:#b9c599a6;
+}
 .felt.empty .cards-grid {
   opacity:.37;
 }

@@ -7,11 +7,12 @@ This project runs locally or on GitHub Pages. To update an existing site, replac
 ## The rules
 
 - One host and one guest.
-- The host deals the first ten distinct, face-up cards from a fresh standard 52-card deck, with no jokers.
-- The guest selects one card. Both screens show the accepted choice.
+- The host deals the first ten distinct cards from a fresh standard 52-card deck, with no jokers.
+- The chooser sees ten face-up cards; the dealer sees ten face-down cards.
+- The guest selects one card. That card is revealed to the dealer in its original position; the other nine stay face down. Both screens show the accepted choice.
 - The guest can then click **Deal next hand** to deal ten cards for the host to choose from.
 - After each choice, the chooser gets the next deal. This repeats in the same room, using the same invite link.
-- There is one choice per deal. A fresh deal clears the selection. Before a selection, the current dealer may re-deal without changing whose turn it is.
+- There is one choice per deal. A fresh deal clears the selection and turns all ten cards face down for the new dealer. Before a selection, the current dealer may re-deal without changing whose turn it is.
 - The host can deal before the guest joins; the guest receives the current game when connecting.
 - A disconnected guest can be replaced while the host keeps the game open.
 - Closing, refreshing, or leaving the host's page ends that session. Connection loss takes a short time to detect.
@@ -20,7 +21,7 @@ This project runs locally or on GitHub Pages. To update an existing site, replac
 
 Open **`START_HERE.html`** from the extracted folder in your browser, then choose
 **Just exploring? Try it on this device**. This single-file edition lets you deal
-and select cards immediately. When opened as a local file, network-game controls
+and select cards immediately using the chooser's face-up view. When opened as a local file, network-game controls
 are disabled; use the local web server or GitHub Pages for invite links.
 
 `START_HERE.html` is generated from the same application source. Regenerate it
@@ -47,16 +48,21 @@ For a first look, choose **Just exploring? Try it on this device**. This local p
 1. The host clicks **Create a table**.
 2. The host clicks **Copy invite link** and shares it with the guest.
 3. The guest opens the link, or pastes it into **Invite link** and clicks **Join table**.
-4. The host clicks **Deal ten cards**. The guest picks one card.
-5. Both screens show the same selection. The guest now has a **Deal next hand** button.
-6. The guest deals; the host selects a card. The host then deals the next hand, and the turns continue.
+4. The host clicks **Deal ten cards**. The host sees card backs; the guest sees the card faces and picks one.
+5. The chosen card turns face up for the host. The other nine remain face down. The guest now has a **Deal next hand** button.
+6. The guest deals and sees card backs; the host sees the faces and selects a card. The selected card is revealed to the guest. The turns continue.
 
 **Hosting and dealing are separate roles.** The original host keeps the session alive and validates shared state, even during the guest's dealing turn. Keep the host's tab open throughout.
 
-When updating from the first version, replace `index.html` and all three changed
-JavaScript files (`src/app.js`, `src/game.js`, `src/session.js`). Both players
-should refresh the updated website and start a new game. This version uses a new
-message format so that dealing turns stay consistent on both screens.
+When updating, upload the extracted project's contents, preserving the folders
+and leaving out `.github/` for branch-based Pages publication. This update adds
+`src/view.js` and changes the display, stylesheet, and instructions. Both players
+should refresh the updated website and start a new game.
+
+Face-down cards are hidden in the interface, including card text, accessible
+labels, and DOM data attributes. The original host still shuffles and holds the
+full game state, and both browsers receive it. This is visual hiding, not secure
+blinding against someone inspecting browser developer tools.
 
 To test on one computer, use a second browser window for the guest. For another device, first publish the project: a `localhost` link points to the device opening it, not to the host's computer.
 
@@ -90,6 +96,7 @@ See [GitHub Pages documentation](https://docs.github.com/en/pages/getting-starte
 | `index.html` and `styles.css` | Page structure, controls, and card-table appearance. |
 | `src/app.js` | Connects the controls to the game and displays updates. |
 | `src/game.js` | Deck, shuffle, alternating dealer/chooser turns, and selection rules. |
+| `src/view.js` | Shows card faces to the chooser and only the selected card to the dealer. |
 | `src/session.js` | Host/guest connections, admission, messages, synchronization, and disconnect handling. |
 | `src/invite.js` | Builds and validates invite links. |
 | `src/config.js` | PeerJS library location and WebRTC connection settings. |
@@ -123,9 +130,9 @@ npm run build
 The build copies the public application files into `dist/`; no framework or package installation is required. Building is optional for root-folder GitHub Pages publication.
 
 Automated verification covers card rules, invite handling, simulated host/guest
-sessions, and alternating turns. The browser timer regression is included.
+sessions, alternating turns, and which cards each player is shown. The browser timer regression is included.
 The first version has been reported working on the user's live site; the new
-alternating-turn behavior still needs a live browser retest after deployment.
+display behavior still needs a live browser retest after deployment.
 Test the full cycle on two devices: host deals, guest selects and deals, host
 selects and deals again. Also test joining after a deal, a second guest being
 refused, and closing the original host's page during the guest's dealing turn.
